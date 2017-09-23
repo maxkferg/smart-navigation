@@ -4,9 +4,11 @@
 # Date: 2016.5.4
 # -----------------------------------
 import os
+import math
 import random
 import tensorflow as tf
 import numpy as np
+from pprint import pprint
 from .ou_noise import OUNoise
 from .critic_network import CriticNetwork
 from .actor_network import ActorNetwork
@@ -17,6 +19,10 @@ REPLAY_BUFFER_SIZE = 1000000
 REPLAY_START_SIZE = 10000
 BATCH_SIZE = 64
 GAMMA = 0.98
+
+
+def variable(shape,f):
+    return tf.Variable(tf.random_uniform(shape,-1/math.sqrt(f),1/math.sqrt(f)))
 
 
 class DDPG:
@@ -41,9 +47,25 @@ class DDPG:
         # Initialize a random process the Ornstein-Uhlenbeck process for action exploration
         self.exploration_noise = OUNoise(self.action_dim)
 
-        self.saver = tf.train.Saver()
+        self.saver = self.get_saver()
 
 
+    def get_saver(self):
+        exclude = [
+            'Variable/ExponentialMovingAverage:0',
+            'Variable/Adam:0',
+            'Variable/Adam_1:0',
+            'Variable_8/ExponentialMovingAverage:0',
+            'Variable_8/Adam:0'
+            'Variable/Adam_1:0',
+        ]
+        nodes = tf.trainable_variables()
+        mapping = {var.name.split(':')[0]:var for var in nodes if var.name not in exclude}
+        mapping['Variable'] = nodes[0]
+        mapping['Variable_8'] = nodes[8]
+        pprint(mapping)
+
+        return tf.train.Saver(mapping)
 
     def train(self):
         #print "train step",self.time_step
@@ -105,7 +127,8 @@ class DDPG:
             action = self.environment.get_default_action()
         else:
             action = self.actor_network.action(state)
-            action = action + self.exploration_noise.noise() * epsilon
+            noise = self.exploration_noise.noise() * epsilon * abs(action)
+            action = action + noise
         # Clip action to ensure it NEVER exceeds the range of tanh
         return np.clip(action,-1,1)
 

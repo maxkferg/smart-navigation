@@ -44,6 +44,9 @@ class ActorNetwork:
         state_input = tf.placeholder("float",[None,state_dim])
         is_training = tf.placeholder(tf.bool)
 
+        W1old = self.variable([state_dim,layer1_size],state_dim)
+
+
         W1 = self.variable([state_dim,layer1_size],state_dim)
         b1 = self.variable([layer1_size],state_dim)
         W2 = self.variable([layer1_size,layer2_size],layer1_size)
