@@ -1,17 +1,52 @@
-# Smart City Model
+# Smart Navigation Simulations
 
-A three dimensional graphical information system for orchestration of autonomous devices in a smart city. 
+In this project we teach an agent to navigate to a target using reinforcement learning.
+The project is designed so that the trained agent can easilly be applied to a real control task
 
+## Environment
 
-## Introduction
-The world is already well on its way to a day when innumerable autonomous cars and drones buzz about, shuffling commuters to work and packages to doorsteps. We refer to system as the Swarm.
+The learning environment is designed as follows:
 
-Individual agents in the Swarm are likely to either control themselves, or be controlled by a distributed system. Latency requirements ensure that most control code will be executed on the agents.
+* An agent is randomly spawned at some location in continuous space
+* The agent must move to a target somewhere in the space
+* The agent must avoid penalty tiles in the environment
+* The agent must avoid other agents in the environment
+* The simualtion ends when the agent reaches the target or has a collision
 
-However, there is a need for a larger and more centralized information system. This system will keep track of obscurities in the city that might effect agents in the swarm. We refer to this systems as the `Smart City Model`. The `smart city model` will keep of information such as intersection status, road conditions, and construction work. This information will be made available to Swarm agents, so they can make better decisions.
+## Learning algorithms
 
-Most of the information in the `smart city model` will be inferred from cameras ect, using computer vision and artificial intelligence. 
+Several different learning algorithms are tested.
 
+### DDPG
 
-# License
-Copyright 2017, Max Ferguson
+Currently we have only implimented DDPG.
+See the original implimentation here: [https://github.com/songrotek/DDPG](https://github.com/songrotek/DDPG)
+
+### A3C
+
+To be implimented
+
+## Training
+
+All the code was written with Python3.6. The code should work with all recent versions of Python3.
+
+Install the requirements
+```sh
+pip3 install -r requirements.txt
+```
+
+Test the environment manually
+```sh
+python3 -m environments.redis.environment
+```
+
+Run the training process. Change epsilon to a high value before training 
+the first time.
+```sh
+python3 train.py
+```
+
+## License
+
+* environments: Copyright Max Ferguson 2017
+* learners: MIT

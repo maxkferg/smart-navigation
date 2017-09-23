@@ -1,132 +1,111 @@
-"""
-Test each of the modules
-Modules can be selected using command line arguments
-Runs the test.py file in module directory
-"""
-import sys
 import numpy as np
 import tensorflow as tf
-
-print("Using numpy version ==", np.__version__)
-print("Using tensorflow version ==", tf.__version__)
-print("Running training proceedure")
-
-PREPROCESS=0
-TRAIN=1
+from tqdm import tqdm
+from datetime import datetime
+from learners.ddpg.ddpg import DDPG, REPLAY_START_SIZE
+from environments.redis.environment import LearningEnvironment
+from debug import *
 
 
-if PREPROCESS:
-    from modules.vision.tf_convert_data import preprocess
-    preprocess(
-        dataset_name="database",
-        dataset_dir="1500328203",
-        output_name="1500328203",
-        output_dir="~/Data/intersection"
-    )
-
-
-if TRAIN:
-    from modules.vision.train_ssd_network import train
-    train(
-        train_dir="./modules/vision/logs/ssd_300_database",
-        dataset_dir="~/Data/intersection",
-        checkpoint_path="./modules/vision/checkpoints/ssd_model.ckpt",
-        dataset_name="database",
-        dataset_split_name="train",
-        model_name="ssd_300_vgg",
-        save_summaries_secs=60,
-        save_interval_secs=60,
-        weight_decay=0.0005,
-        optimizer="adam",
-        learning_rate=0.00005,
-        learning_rate_decay_factor=0.999,
-        batch_size=32,
-        checkpoint_exclude_scopes="ssd_300_vgg/block4_box,ssd_300_vgg/block7_box,ssd_300_vgg/block8_box,ssd_300_vgg/block9_box,ssd_300_vgg/block10_box,ssd_300_vgg/block11_box"
-    )
+t = datetime.now().strftime('%H-%M')
+PATH = 'results/checkpoints'.format(t)
+LOGS = 'results/logs/{0}'.format(t)
+EPOCHS = 100000
+EPISODES = 20
+PARTICLES = 2
+RENDER = True
+STEP = 4
 
 
 
+def fill_buffer(env, agent, epsilon):
+    while agent.replay_buffer.count() <=  REPLAY_START_SIZE:
+        done = False
+        state = env.reset()
+        rewards = 0
+        # Training
+        while not done:
+            action = agent.noise_action(state, epsilon)
+            next_state, reward, done, info = env.step(action, STEP)
+            agent.perceive(state, action, reward, next_state, done)
+            # Setup for next cycle
+            state = next_state
+            rewards += reward
+
+
+def train(env, agent, epsilon):
+    done = False
+    state = env.reset()
+    rewards = 0
+    # Training
+    while not done:
+        #action = agent.noise_action(state, epsilon)
+        action = agent.action(state)
+        next_state, reward, done, info = env.step(action, STEP)
+        agent.perceive(state, action, reward, next_state, done)
+        # Setup for next cycle
+        state = next_state
+        rewards += reward
+    return rewards
+
+
+def test(env, agent, render=False):
+    state = env.reset()
+    done = False
+    rewards = 0
+    while not done:
+        action = agent.action(state)
+        next_state, reward, done, info = env.step(action, STEP)
+        state = next_state
+        rewards += reward
+        if render:
+            env.background = get_q_background(env, agent, action)
+            env.render()
+    return rewards
+
+
+if __name__=='__main__':
+    # Setup
+    epsilon = 0.0
+    disabled = not RENDER
+    env = LearningEnvironment(num_particles=PARTICLES, disable_render=disabled)
+    writer = tf.summary.FileWriter(LOGS, graph=tf.get_default_graph())
+    agent = DDPG(env,writer)
+    agent.restore_model(PATH)
+
+    # Fill the buffer
+    fill_buffer(env, agent, epsilon)
+
+    # Train on a large number of epochs
+    for epoch in range(EPOCHS):
+        print("\nEPOCH: {0} epsilon={1:.3f}".format(epoch,epsilon))
+        rewards = []
+
+        # Run a few episodes
+        env.switch_backend("simulation")
+        for episode in tqdm(range(EPISODES)):
+            reward = train(env, agent, epsilon)
+            rewards.append(reward)
+
+        # Evaluate
+        train_reward = np.mean(rewards)
+        test_reward = np.mean([test(env, agent) for i in range(20)])
+        print("Train Reward {0}, Test Reward {1}".format(train_reward, test_reward))
+
+        env.switch_backend("simulation")
+        test(env, agent, render=RENDER)
+
+        # Test in real environment
+        env.switch_backend("redis")
+        test(env, agent, render=RENDER)
+
+        # Save model
+        agent.save_model(PATH,epoch)
+
+        # Update parameters
+        epsilon *= 0.99
 
 
 
-"""
-***_ACCESS_KEY_ID=AKIAI2HCCWWOUYMXRQIA
-***_SECRET_ACCESS_KEY=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
-
-python3 tf_convert_data.py \
---dataset_name=database \
---dataset_dir=1500328203 \
---output_name=database_train \
---output_dir=/Users/maxferguson/Data/database
-
-# =========================================================================== #
-# Copying checkpoints
-# =========================================================================== #
-
-scp -r ubuntu@35.197.105.165:~/smart-city-model/modules/vision/checkpoints/* .
-
-# =========================================================================== #
-# Database training
-# =========================================================================== #
-DATASET_NAME=database
-TRAIN_DIR=./modules/vision/logs/ssd_300_database
-DATASET_DIR=/Users/maxferguson/Data/database
-CHECKPOINT_PATH=./modules/vision/checkpoints/ssd_model.ckpt
-
-python3 train.py \
-    --train_dir=${TRAIN_DIR} \
-    --dataset_dir=${DATASET_DIR} \
-    --checkpoint_path=${CHECKPOINT_PATH} \
-    --dataset_name=${DATASET_NAME} \
-    --dataset_split_name=train \
-    --model_name=ssd_300_vgg \
-    --save_summaries_secs=60 \
-    --save_interval_secs=60 \
-    --weight_decay=0.0005 \
-    --optimizer=adam \
-    --learning_rate=0.00005 \
-    --learning_rate_decay_factor=0.999
-    --batch_size=32 \
-    --checkpoint_path=${CHECKPOINT_PATH} \
-    --checkpoint_exclude_scopes=ssd_300_vgg/block4_box,ssd_300_vgg/block7_box,ssd_300_vgg/block8_box,ssd_300_vgg/block9_box,ssd_300_vgg/block10_box,ssd_300_vgg/block11_box \
 
 
-
-"""
-
-
-
-
-"""
-python3 tf_convert_data.py \
---dataset_name=database \
---dataset_dir=1500327953 \
---output_name=database_train \
---output_dir=/home/ubuntu/Data
-
-
-# =========================================================================== #
-# Database training
-# =========================================================================== #
-DATASET_NAME=database
-TRAIN_DIR=./modules/vision/logs/ssd_300_database
-DATASET_DIR=/home/ubuntu/Data
-CHECKPOINT_PATH=./modules/vision/checkpoints/ssd_model.ckpt
-
-python3 train.py \
-    --train_dir=${TRAIN_DIR} \
-    --dataset_dir=${DATASET_DIR} \
-    --checkpoint_path=${CHECKPOINT_PATH} \
-    --dataset_name=${DATASET_NAME} \
-    --dataset_split_name=train \
-    --model_name=ssd_300_vgg \
-    --save_summaries_secs=60 \
-    --save_interval_secs=60 \
-    --weight_decay=0.0005 \
-    --optimizer=adam \
-    --learning_rate=0.00005 \
-    --learning_rate_decay_factor=0.999
-    --batch_size=32 \
-    --checkpoint_path=${CHECKPOINT_PATH} \
-    --checkpoint_exclude_scopes=ssd_300_vgg/block4_box,ssd_300_vgg/block7_box,ssd_300_vgg/block8_box,ssd_300_vgg/block9_box,ssd_300_vgg/block10_box,ssd_300_vgg/block11_box \
-"""
