@@ -61,11 +61,9 @@ class DDPG:
         ]
         nodes = tf.trainable_variables()
         mapping = {var.name.split(':')[0]:var for var in nodes if var.name not in exclude}
-        mapping['Variable'] = nodes[0]
-        mapping['Variable_8'] = nodes[8]
-        pprint(mapping)
 
-        return tf.train.Saver(mapping)
+        return tf.train.Saver()
+
 
     def train(self):
         #print "train step",self.time_step
