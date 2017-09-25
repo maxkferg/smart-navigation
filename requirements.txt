@@ -4,10 +4,12 @@ graphql-core==1.1
 graphql-relay==0.4.5
 imageio==2.1.2
 Keras==2.0.6
-matplotlib==2.0.2+4521.ga57a80c
+matplotlib==2.0.2
 numba==0.34.0
 numpy==1.13.1
 pygame==1.9.3
+redis==2.10.6
+requests==2.14.2
 scikit-image==0.13.0
 scikit-learn==0.18.2
 scipy==0.19.0

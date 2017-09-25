@@ -16,7 +16,7 @@ int main(int argc, char **argv)
     string REDIS_HOST;
     int REDIS_PORT;
 
-    VIDEO_IP = "http://184.156.74.225:84/videostream.cgi?user=admin&pwd=";
+    VIDEO_IP = "http://10.35.114.8:8080/video";
     REDIS_HOST = "eil-computenode1.stanford.edu";
     REDIS_PORT = 8080;
 
