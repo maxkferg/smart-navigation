@@ -99,14 +99,12 @@ class LearningEnvironment:
 
         # Reset the environment to correctly spawn the particles
         self.reset()
-
         if not disable_render:
             print('Initializing pygame screen')
             self.screen_buffer = pygame.Surface((self.screen_width, self.screen_height))
             self.screen_buffer.set_alpha(50)
             self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
             pygame.display.set_caption('Bouncing Objects')
-
 
     def step(self, action, n):
         """

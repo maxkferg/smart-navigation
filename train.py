@@ -48,7 +48,6 @@ def train(env, agent, epsilon):
         rewards += reward
     return rewards
 
-
 def test(env, agent, render=False):
     state = env.reset()
     done = False
@@ -67,8 +66,8 @@ def test(env, agent, render=False):
 if __name__=='__main__':
     # Setup
     epsilon = 0.0
-    disabled = not RENDER
-    env = LearningEnvironment(num_particles=PARTICLES, disable_render=disabled)
+    disabled = RENDER
+    env = LearningEnvironment(num_particles=PARTICLES, disable_render=False)
     writer = tf.summary.FileWriter(LOGS, graph=tf.get_default_graph())
     agent = DDPG(env,writer)
     agent.restore_model(PATH)
@@ -82,7 +81,7 @@ if __name__=='__main__':
         rewards = []
 
         # Run a few episodes
-        env.switch_backend("simulation")
+       # env.switch_backend("simulation")
         for episode in tqdm(range(EPISODES)):
             reward = train(env, agent, epsilon)
             rewards.append(reward)
@@ -92,11 +91,11 @@ if __name__=='__main__':
         test_reward = np.mean([test(env, agent) for i in range(20)])
         print("Train Reward {0}, Test Reward {1}".format(train_reward, test_reward))
 
-        env.switch_backend("simulation")
+        #env.switch_backend("simulation")
         test(env, agent, render=RENDER)
 
         # Test in real environment
-        env.switch_backend("redis")
+        #env.switch_backend("redis")
         test(env, agent, render=RENDER)
 
         # Save model
