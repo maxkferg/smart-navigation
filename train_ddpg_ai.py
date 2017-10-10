@@ -30,7 +30,7 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
     if rank != 0: logger.set_level(logger.DISABLED)
 
     # Create envs.
-    env = gym.make(env_id)
+    #env = gym.make(env_id)
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=False)
 
 #    env = bench.Monitor(env, logger.get_dir() and os.path.join(logger.get_dir(), "%i.monitor.json"%rank))
@@ -92,7 +92,7 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    
+
     parser.add_argument('--env-id', type=str, default='HalfCheetah-v1')
     boolean_flag(parser, 'render-eval', default=False)
     boolean_flag(parser, 'layer-norm', default=True)
