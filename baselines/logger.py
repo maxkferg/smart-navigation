@@ -99,7 +99,7 @@ class TensorBoardOutputFormat(OutputFormat):
         prefix = 'events'
         path = osp.join(osp.abspath(dir), prefix)
         import tensorflow as tf
-        from tensorflow.python import pywrap_tensorflow        
+        from tensorflow.python import pywrap_tensorflow
         from tensorflow.core.util import event_pb2
         from tensorflow.python.util import compat
         self.tf = tf
@@ -167,7 +167,7 @@ def dumpkvs():
     Logger.CURRENT.dumpkvs()
 
 def getkvs():
-    return Logger.CURRENT.name2val    
+    return Logger.CURRENT.name2val
 
 
 def log(*args, level=INFO):
@@ -266,7 +266,7 @@ def configure(dir=None, format_strs=None):
     if dir is None:
         dir = os.getenv('OPENAI_LOGDIR')
     if dir is None:
-        dir = osp.join(tempfile.gettempdir(), 
+        dir = osp.join(tempfile.gettempdir(),
             datetime.datetime.now().strftime("openai-%Y-%m-%d-%H-%M-%S-%f"))
     if format_strs is None:
         format_strs = LOG_OUTPUT_FORMATS
@@ -274,7 +274,7 @@ def configure(dir=None, format_strs=None):
     Logger.CURRENT = Logger(dir=dir, output_formats=output_formats)
     log('Logging to %s'%dir)
 
-if os.getenv('OPENAI_LOGDIR'): 
+if os.getenv('OPENAI_LOGDIR'):
     # if OPENAI_LOGDIR is set, configure the logger on import
     # this kind of nasty (unexpected to user), but I don't know how else to inject the logger
     # to a script that's getting run in a subprocess
