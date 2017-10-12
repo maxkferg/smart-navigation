@@ -66,11 +66,11 @@ def get_q(env, agent, action, n=40):
     return q
 
 
-def get_q_background(env, agent, action):
+def get_q_background(env,q):
     """
     Return a q background image
     """
-    q = get_q(env, agent, action, n=100)
+    #q = get_q(env, agent, action, n=100)
     q = map_to_colors(q)
     q = scale_image(q)
     return q

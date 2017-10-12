@@ -7,6 +7,7 @@ from baselines.ddpg.ddpg import DDPG
 from baselines.ddpg.util import mpi_mean, mpi_std, mpi_max, mpi_sum
 import baselines.common.tf_util as U
 
+from debug import *
 from baselines import logger
 import numpy as np
 import tensorflow as tf
@@ -131,7 +132,11 @@ def train(env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, render, pa
                     eval_episode_reward = 0.
                     for t_rollout in range(nb_eval_steps):
                         eval_action, eval_q = agent.pi(eval_obs, apply_noise=False, compute_Q=True)
-                        eval_obs, eval_r, eval_done, eval_info = eval_env.step(action, 1)  # scale for execution in env (as far as DDPG is concerned, every action is in [-1, 1])
+
+                        eval_obs, eval_r, eval_done, eval_info = eval_env.step(action, 1)
+                        eval_env.background = get_q_background(eval_env,q)
+
+                        # scale for execution in env (as far as DDPG is concerned, every action is in [-1, 1])
                         if render_eval:
                             eval_env.render()
                         eval_episode_reward += eval_r
