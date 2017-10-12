@@ -40,7 +40,7 @@ def save_image_to_file(filename,pixels):
 
 
 
-def get_q(env, agent, action, n=40):
+def get_q(env, critic, action, n=40):
     """
     Return the Q value for a grid of x/y values
     Assumes all the particles are just doing what they are doing
@@ -61,16 +61,16 @@ def get_q(env, agent, action, n=40):
     action_batch = np.stack((action1, action2)).T
 
     # Get Q values
-    q = agent.critic_network.q_value(state_batch, action_batch)
+    q = critic(state_batch)#, action_batch)
     q = np.reshape(q, (n,n))
     return q
 
 
-def get_q_background(env,q):
+def get_q_background(env, critic, action):
     """
     Return a q background image
     """
-    #q = get_q(env, agent, action, n=100)
+    q = get_q(env, critic, action, n=100)
     q = map_to_colors(q)
     q = scale_image(q)
     return q

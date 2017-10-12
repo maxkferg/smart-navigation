@@ -259,7 +259,7 @@ class DDPG(object):
         names += ['reference_actor_Q_mean']
         ops += [reduce_std(self.critic_with_actor_tf)]
         names += ['reference_actor_Q_std']
-        
+
         ops += [tf.reduce_mean(self.actor_tf)]
         names += ['reference_action_mean']
         ops += [reduce_std(self.actor_tf)]
@@ -273,6 +273,14 @@ class DDPG(object):
 
         self.stats_ops = ops
         self.stats_names = names
+
+
+    def q(self, obs):
+        """Compute the q value for some observation"""
+        return self.sess.run(self.critic_with_actor_tf, feed_dict={
+             self.obs0: obs
+        })
+
 
     def pi(self, obs, apply_noise=True, compute_Q=True):
         if self.param_noise is not None and apply_noise:
