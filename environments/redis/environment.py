@@ -38,13 +38,17 @@ def ttl_color(ttl):
     return [int(255*color) for color in color]
 
 
+def clip(val, minimum, maximum):
+    """Clip a value to [min,max]"""
+    return max(min(val,maximum),minimum)
+
 
 class LearningEnvironment:
     """
     Environment that an algorithm can play with
     """
     action_dimensions = 2
-    state_dimensions = 4 # The number of dimensions per particle (x,y,tx,ty)
+    state_dimensions = 5 # The number of dimensions per particle (x,y,theta,tx,ty)
     state_history = 4
     state_buffer = []
     max_steps = 400
@@ -79,7 +83,7 @@ class LearningEnvironment:
 
         self.universe = Universe((self.screen_width, self.screen_height), self.spawn, self.discretization)
         self.universe.addFunctions(['move', 'bounce', 'brownian', 'collide', 'drag'])
-        self.universe.mass_of_air = 0.001
+        self.universe.mass_of_air = 0.1
 
         # Add all the particles
         colors = sns.color_palette("muted")
@@ -130,25 +134,31 @@ class LearningEnvironment:
         self.primary.control(steering, throttle)
 
         # Step forward one timestep
-        collisions = self.universe.update()
+        self.universe.update()
         state = self.get_current_state()
         self.current_step += 1
 
-        if self.primary.atTarget(threshold=50) and self.primary.speed<0.1:
+        if self.primary.atTarget(threshold=50) and self.primary.speed<0.9:
             reward = 1
             done = True
-        elif collisions > 0:
+        elif self.primary.collisions > 0:
             reward = -1/self.num_particles
             done = True
-        elif self.universe.isOnPenalty(self.primary):
-            reward = -0.02
-            done = self.current_step >= self.max_steps
         else:
             reward = 0
             done = self.current_step >= self.max_steps
 
+        # Enforce acceleration limits
         excess = np.maximum(abs(action)-0.9, 0)
         reward -= np.sum(excess)
+
+        # Enforce penalty regions
+        if self.universe.isOnPenalty(self.primary):
+            reward = -0.02
+
+        # Enforce speed penalty
+        if abs(self.primary.speed) > 1:
+            reward = -abs(self.primary.speed)/100
 
         info = {'step': self.current_step}
         return state, reward, done, info
@@ -206,11 +216,11 @@ class LearningEnvironment:
 
         # Draw the primary particle direction
         p = self.primary
-        dx, dy = p.get_speed_vector(scale=10)
+        dx, dy = p.get_speed_vector(scale=100)
         pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (0,0,0))
 
         # Draw the control vector
-        dx, dy = p.get_control_vector(scale=20)
+        dx, dy = p.get_control_vector(scale=100)
         pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (255,0,0))
 
         self.flip_screen()
@@ -259,7 +269,7 @@ class LearningEnvironment:
         pygame.gfxdraw.aacircle(self.screen, int(x), int(y), r, edgeColor)
 
 
-    def get_default_action(self):
+    def get_teacher_action(self):
         """
         Return a chase goal action
         """
@@ -268,16 +278,31 @@ class LearningEnvironment:
         desired = cart2pol(-dy, dx)[0] # On domain [-pi,pi]
         current = self.primary.angle   # On domain [0, 2*pi]
 
-        if desired < 0:
-            desired += 2*math.pi
+        # Map current to domain [-pi,pi]
+        if current > math.pi:
+            current = current - 2*math.pi
 
-        # Sometimes its better to rotate the other way
+        # Calculate the angle update
         da = desired - current
-        if da > math.pi:
-            da = 2*math.pi - da
 
-        angle = da / 4 # Correct angle
-        speed = (4 - self.primary.speed) / 4 # Aim for speed 4
+        # Ideal speed. Should incur minimal penaly
+        ds = 1
+
+        # Backward left
+        if da < -math.pi / 2:
+            angle = -(da + math.pi)
+            speed = -(ds + self.primary.speed) / 4 # Aim for speed 0.5
+        # Backward right
+        elif da > math.pi / 2:
+            angle = - da + math.pi
+            speed = -(0.5 + self.primary.speed) / 4 # Aim for speed 0.5
+        # Forward
+        else:
+            angle = 2 * da # Correct angle
+            speed = (0.5 - self.primary.speed) / 4 # Aim for speed 0.5
+
+        speed = clip(speed, -0.9, 0.9)
+        angle = clip(angle, -0.9, 0.9)
 
         return np.array([angle,speed])
 
@@ -325,20 +350,20 @@ class HumanLearningEnvironment(LearningEnvironment):
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_w:
-                        action = [0, 0.3]
+                        action = [0, 0.6]
                     if event.key == pygame.K_d:
-                        action = [0.3, 0.3]
+                        action = [0.3, 0.6]
                     if event.key == pygame.K_s:
-                        action = [0, -0.3]
+                        action = [0, -0.6]
                     if event.key == pygame.K_a:
-                        action = [-0.3, 0.3]
+                        action = [-0.3, 0.6]
         return np.array(action)
 
 
 if __name__=="__main__":
     # Demo the environment
     total_rewards = []
-    env = HumanLearningEnvironment(num_particles=1, disable_render=False)
+    env = HumanLearningEnvironment(num_particles=2, disable_render=False)
     while True:
         rewards = 0
         done = False

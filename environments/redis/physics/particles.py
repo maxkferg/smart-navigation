@@ -8,7 +8,9 @@ from .utils import addVectors, pol2cart
 from .config import *
 from .graphql import control_car
 
-STEERING_SENSITIVITY = 0.02
+STEERING_SENSITIVITY = 0.8 # Radians I rotate at speed=1 and steering=1
+ACCELERATION_SENSITIVITY = 0.1 # The amount I speed up at full throttle
+PIXELS_PER_SPEED = 30 # The pixels travelled at speed = 1
 
 db = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
@@ -43,12 +45,14 @@ class Particle:
         self.noise = np.array([0,0])
         self.backend = backend
         self.name = name
+        self.collisions = 0
+        self.control_signal = (0,0)
 
     def move(self):
         """ Update position based on speed, angle """
         if self.backend=="simulation":
-            self.x += math.sin(self.angle) * self.speed
-            self.y -= math.cos(self.angle) * self.speed
+            self.x += math.sin(self.angle) * self.speed * PIXELS_PER_SPEED
+            self.y -= math.cos(self.angle) * self.speed * PIXELS_PER_SPEED
         else:
             position = json.loads(db.get("position"))
             self.x = CAMERA_SCALE_X * (position["x"]+position["width"]/2)
@@ -82,6 +86,7 @@ class Particle:
         return (
             self.x / w,
             self.y / h,
+            self.angle / 2 * math.pi,
             self.target.x / w,
             self.target.y / h
         )
@@ -93,35 +98,8 @@ class Particle:
     def control(self, steering, throttle):
         """ Change angle and speed by a given vector """
         self.angle += steering * self.speed * STEERING_SENSITIVITY
-        self.speed += throttle
+        self.speed += throttle * ACCELERATION_SENSITIVITY
         self.control_signal = (steering,throttle)
 
         if self.backend=="redis":
             control_car(rotation=steering, throttle=throttle)
-
-    def brownian(self):
-        """Add some correlated acceleration"""
-        pass
-        #change = np.random.uniform(-1,1,size=2)
-        #vector = 0.5*self.noise + 1.0*change + 0.6*self.speed
-        #vector = pol2cart(self.angle, 0.003*self.speed) # Antidrag
-        #polar = cart2pol(vector[0],vector[1])
-        #self.accelerate(polar)
-        #self.noise = vector / np.linalg.norm(vector)
-
-
-    def attract(self, other):
-        """" Change velocity based on gravatational attraction between two particle"""
-
-        dx = (self.x - other.x)
-        dy = (self.y - other.y)
-        dist  = math.hypot(dx, dy)
-
-        if dist < self.size + other.size:
-            return True
-
-        theta = math.atan2(dy, dx)
-        force = 0.1 * self.mass * other.mass / dist**2
-        self.accelerate((theta - 0.5 * math.pi, force/self.mass))
-        other.accelerate((theta + 0.5 * math.pi, force/other.mass))
-

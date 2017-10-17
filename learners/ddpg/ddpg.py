@@ -15,10 +15,10 @@ from .actor_network import ActorNetwork
 from .replay_buffer import ReplayBuffer
 
 # Hyper Parameters:
-REPLAY_BUFFER_SIZE = 1000000
+REPLAY_BUFFER_SIZE = 100000
 REPLAY_START_SIZE = 10000
 BATCH_SIZE = 64
-GAMMA = 0.98
+GAMMA = 0.99
 
 
 def variable(shape,f):
@@ -122,7 +122,7 @@ class DDPG:
         # Select the default environment policy with probability epsilon
         # Select action a_t according to the current policy and exploration noise
         if random.random()<epsilon:
-            action = self.environment.get_default_action()
+            action = self.environment.get_teacher_action()
         else:
             action = self.actor_network.action(state)
             noise = self.exploration_noise.noise() * epsilon * abs(action)

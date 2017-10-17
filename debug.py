@@ -51,14 +51,14 @@ def get_q(env, critic, action, n=40):
     x = x.flatten() # primary position is a grid
     y = y.flatten() # Primary position is a grid
 
+    # The number of points in each state history step
+    n_timestep = env.num_particles*env.state_dimensions
+
+    # Set the primary position to (x,y) for all history
     state = env.get_current_state()
     state_batch = np.tile(state, (n**2,1))
-    state_batch[:,0] = x
-    state_batch[:,1] = y
-
-    action1 = action[0] * np.ones_like(x)
-    action2 = action[1] * np.ones_like(x)
-    action_batch = np.stack((action1, action2)).T
+    state_batch[:,0:-1:n_timestep] = x[:,None]
+    state_batch[:,1:-1:n_timestep] = y[:,None]
 
     # Get Q values
     q = critic(state_batch)#, action_batch)

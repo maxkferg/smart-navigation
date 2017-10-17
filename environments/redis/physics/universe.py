@@ -34,16 +34,22 @@ class Universe:
         self.function_dict = {
             'move': (1, lambda p: p.move()),
             'drag': (1, lambda p: p.experienceDrag()),
-            'enter': (1, lambda p: self.enter(p)),
-            'exit': (1, lambda p: self.exit(p)),
             'bounce': (1, lambda p: self.bounce(p)),
-            'brownian': (1, lambda p: p.brownian()),
             'accelerate': (1, lambda p: p.accelerate(self.acceleration)),
             'collide': (2, lambda p1, p2: self.collide(p1, p2)),
             'combine': (2, lambda p1, p2: combine(p1, p2)),
-            'attract': (2, lambda p1, p2: p1.attract(p2))
         }
 
+        self.penalties = 10 * np.array([
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ])
 
     def addFunctions(self, function_list):
         for func in function_list:
@@ -68,7 +74,7 @@ class Universe:
         y = kargs.get('y', random.uniform(size, self.height - size))
 
         particle = Particle((x, y), size, target=target, mass=mass, name=name, backend=backend)
-        particle.speed = kargs.get('speed', 100*random.random())
+        particle.speed = kargs.get('speed', random.random())
         particle.angle = kargs.get('angle', random.uniform(0, math.pi*2))
         particle.colour = kargs.get('color', (0,0,0))
         particle.elasticity = kargs.get('elasticity', self.elasticity)
@@ -109,7 +115,8 @@ class Universe:
 
             particle.x = random.uniform(xmin+particle.size, xmax-particle.size)
             particle.y = random.uniform(ymin+particle.size, ymax-particle.size)
-            particle.speed = 15*random.random()
+            particle.speed = 0.5 * random.random()
+            particle.collisions = 0
             self.penalties[yi,xi] = 10
 
         for target in self.targets:
@@ -129,9 +136,6 @@ class Universe:
         Return the number of particle-particle collisions
         """
 
-        self.collisions = 0 # The number of collisions
-        self.step_penalties()
-
         for i, particle in enumerate(self.particles, 1):
             for f in self.particle_functions1:
                 f(particle)
@@ -141,48 +145,6 @@ class Universe:
             # Fix all the angles
             particle.angle = normalizeAngle(particle.angle)
 
-        for spring in self.springs:
-            spring.update()
-
-        return self.collisions
-
-
-    def step_penalties(self):
-        """Generate a new map where some of the regions are penalties"""
-        safe_ttl = 10
-        safe_prob = 0.05
-        danger_prob = 0.01
-        danger_step = 0.1
-
-        # Randomly spawn future dangers
-        dangers = np.random.uniform(size=self.penalties.shape) < danger_prob
-        penalties = self.penalties - dangers
-
-        # Subtract 1 time step from all the ttl values
-        penalties = penalties - (penalties<safe_ttl) * danger_step * np.ones_like(self.penalties)
-
-        # Randomly make some of the danger zones safe
-        safe = np.random.uniform(size=penalties.shape) < safe_prob
-        safe = safe * (penalties<=0) # Only apply safety to danger regions
-        penalties[safe] = safe_ttl
-
-        # Enforce all values are above zero
-        penalties = np.maximum(0, penalties)
-        penalties = np.minimum(10, penalties)
-
-        penalties = 10 * np.array([
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-        ])
-
-        # Update universe
-        self.penalties = penalties
 
 
     def bounce(self, particle):
@@ -192,21 +154,25 @@ class Universe:
             particle.x = 2*(self.width - particle.size) - particle.x
             particle.angle = - particle.angle
             particle.speed *= self.elasticity
+            particle.collisions += 1
 
         elif particle.x < particle.size:
             particle.x = 2*particle.size - particle.x
             particle.angle = - particle.angle
             particle.speed *= self.elasticity
+            particle.collisions += 1
 
         if particle.y > self.height - particle.size:
             particle.y = 2*(self.height - particle.size) - particle.y
             particle.angle = math.pi - particle.angle
             particle.speed *= self.elasticity
+            particle.collisions += 1
 
         elif particle.y < particle.size:
             particle.y = 2*particle.size - particle.y
             particle.angle = math.pi - particle.angle
             particle.speed *= self.elasticity
+            particle.collisions += 1
 
 
     def collide(self, p1, p2):
@@ -233,8 +199,8 @@ class Universe:
             p2.x -= math.sin(angle)*overlap
             p2.y += math.cos(angle)*overlap
 
-            if "primary" in [p1.name, p2.name]:
-                self.collisions += 1
+            p1.collisions += 1
+            p2.collisions += 1
 
     def isOnPenalty(self, particle):
         # Find discretized position
