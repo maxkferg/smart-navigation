@@ -17,7 +17,7 @@ from mpi4py import MPI
 def train(env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, render, param_noise, actor, critic,
     normalize_returns, normalize_observations, critic_l2_reg, actor_lr, critic_lr, action_noise,
     popart, gamma, clip_norm, nb_train_steps, nb_rollout_steps, nb_eval_steps, batch_size, memory,
-    tau=0.01, eval_env=True, param_noise_adaption_interval=50):
+    teacher, tau=0.01, eval_env=True, param_noise_adaption_interval=50):
     rank = MPI.COMM_WORLD.Get_rank()
     t = datetime.now().strftime('%H-%M')
     PATH = 'results/checkpoints'.format(t)
@@ -76,7 +76,11 @@ def train(env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, render, pa
                 # Perform rollouts.
                 for t_rollout in range(nb_rollout_steps):
                     # Predict next action.
-                    action, q = agent.pi(obs, apply_noise=True, compute_Q=True)
+                    if random.random() < teacher:
+                        action = env.get_teacher_action()
+                        _, q = agent.pi(obs, compute_Q=True) # Good enough for stats
+                    else:
+                        action, q = agent.pi(obs, apply_noise=True, compute_Q=True)
                     assert action.shape == env.action_space.shape
 
                     # Execute next action.

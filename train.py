@@ -8,8 +8,8 @@ from debug import *
 
 
 t = datetime.now().strftime('%H-%M')
-PATH = 'results/checkpoints'.format(t)
-LOGS = 'results/logs/{0}'.format(t)
+PATH = 'results/ddpg/checkpoints'.format(t)
+LOGS = 'results/ddpg/logs/{0}'.format(t)
 EPOCHS = 100000
 EPISODES = 20
 PARTICLES = 2
@@ -58,14 +58,14 @@ def test(env, agent, render=False):
         state = next_state
         rewards += reward
         if render:
-            env.background = get_q_background(env, agent, action)
+            #env.background = get_q_background(env, agent, action)
             env.render()
     return rewards
 
 
 if __name__=='__main__':
     # Setup
-    epsilon = 0.0
+    epsilon = 0.4
     disabled = RENDER
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=False)
     writer = tf.summary.FileWriter(LOGS, graph=tf.get_default_graph())
