@@ -10,7 +10,10 @@ from collections import deque
 
 def traj_segment_generator(pi, env, horizon, stochastic):
     t = 0
-    ac = env.action_space.sample() # not used, just so we have the datatype
+    action = [-0.3, 0.3]
+    action=np.array(action)
+    ac=action
+    #ac = env.action_space.sample() # not used, just so we have the datatype
     new = True # marks if we're on first timestep of an episode
     ob = env.reset()
 
@@ -48,7 +51,7 @@ def traj_segment_generator(pi, env, horizon, stochastic):
         acs[i] = ac
         prevacs[i] = prevac
 
-        ob, rew, new, _ = env.step(ac)
+        ob, rew, new, _ = env.step(ac,1)
         rews[i] = rew
 
         cur_ep_ret += rew
@@ -91,6 +94,10 @@ def learn(env, policy_func, *,
     # ----------------------------------------
     ob_space = env.observation_space
     ac_space = env.action_space
+    #low = [-1, -1]
+    #high = [1, 1]
+    #ac_space.high= np.array(high)
+    #ac_space.low = np.array(low)
     pi = policy_func("pi", ob_space, ac_space) # Construct network for new policy
     oldpi = policy_func("oldpi", ob_space, ac_space) # Network for old policy
     atarg = tf.placeholder(dtype=tf.float32, shape=[None]) # Target advantage function (if applicable)
