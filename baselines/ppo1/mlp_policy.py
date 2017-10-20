@@ -3,7 +3,9 @@ import baselines.common.tf_util as U
 import tensorflow as tf
 import gym
 import numpy as np
+import gym.spaces
 from baselines.common.distributions import make_pdtype
+
 
 class MlpPolicy(object):
     recurrent = False
@@ -48,14 +50,26 @@ class MlpPolicy(object):
         ac = U.switch(stochastic, self.pd.sample(), self.pd.mode())
         self._act = U.function([stochastic, ob], [ac, self.vpred])
 
+    def value(self, stochastic, ob):
+        """
+        Compute the value.
+        @ob must be (batch_size, observation_size).
+        Return size (batch_size, )
+        """
+        ac1, vpred1 =  self._act(stochastic, ob)
+        return vpred1
+
     def act(self, stochastic, ob):
         ob = np.transpose(ob)
         ac1, vpred1 =  self._act(stochastic, ob[None])
         return ac1[0], vpred1[0]
+
     def get_variables(self):
         return tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, self.scope)
+
     def get_trainable_variables(self):
         return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, self.scope)
+
     def get_initial_state(self):
         return []
 
