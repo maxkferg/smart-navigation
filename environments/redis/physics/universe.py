@@ -27,7 +27,6 @@ class Universe:
         self.colour = (255,255,255)
         self.mass_of_air = 0.2
         self.elasticity = 0.2
-        self.acceleration = (0,0)
 
         self.particle_functions1 = []
         self.particle_functions2 = []
@@ -35,7 +34,7 @@ class Universe:
             'move': (1, lambda p: p.move()),
             'drag': (1, lambda p: p.experienceDrag()),
             'bounce': (1, lambda p: self.bounce(p)),
-            'accelerate': (1, lambda p: p.accelerate(self.acceleration)),
+            'accelerate': (1, lambda p: p.accelerate(random.random())),
             'collide': (2, lambda p1, p2: self.collide(p1, p2)),
             'combine': (2, lambda p1, p2: combine(p1, p2)),
         }
@@ -135,7 +134,6 @@ class Universe:
         Moves particles and tests for collisions with the walls and each other
         Return the number of particle-particle collisions
         """
-
         for i, particle in enumerate(self.particles, 1):
             for f in self.particle_functions1:
                 f(particle)

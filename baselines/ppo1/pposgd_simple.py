@@ -1,3 +1,4 @@
+import os
 from baselines.common import Dataset, explained_variance, fmt_row, zipsame
 from baselines import logger
 import baselines.common.tf_util as U
@@ -7,6 +8,32 @@ from baselines.common.mpi_adam import MpiAdam
 from baselines.common.mpi_moments import mpi_moments
 from mpi4py import MPI
 from collections import deque
+from baselines.ppo1.debug_ppo import get_v_background
+
+
+
+class Saver:
+    saver = None
+
+    def save_model(self, path, episode):
+        if self.saver is None:
+            self.saver = tf.train.Saver()
+        sess = U.get_session()
+        filename = os.path.join(path, "model.ckpt")
+        self.saver.save(sess, filename, episode)
+        print("Saved model to ", filename)
+
+    def restore_model(self, path):
+        if self.saver is None:
+            self.saver = tf.train.Saver()
+        try:
+            sess = U.get_session()
+            checkpoint = tf.train.latest_checkpoint(path)
+            self.saver.restore(sess, checkpoint)
+            print("Restored model from ", checkpoint)
+        except Exception as e:
+            print(e)
+
 
 def traj_segment_generator(pi, env, horizon, stochastic):
     t = 0
@@ -77,7 +104,9 @@ def add_vtarg_and_adv(seg, gamma, lam):
         gaelam[t] = lastgaelam = delta + gamma * lam * nonterminal * lastgaelam
     seg["tdlamret"] = seg["adv"] + seg["vpred"]
 
-def learn(env, policy_func, *,
+
+
+def learn(env, eval_env, policy_func, *,
         timesteps_per_batch, # timesteps per actor per update
         clip_param, entcoeff, # clipping parameter epsilon, entropy coeff
         optim_epochs, optim_stepsize, optim_batchsize,# optimization hypers
@@ -85,10 +114,12 @@ def learn(env, policy_func, *,
         max_timesteps=0, max_episodes=0, max_iters=0, max_seconds=0,  # time constraint
         callback=None, # you can do anything in the callback, since it takes locals(), globals()
         adam_epsilon=1e-5,
-        schedule='constant' # annealing for stepsize parameters (epsilon and adam)
+        schedule='constant', # annealing for stepsize parameters (epsilon and adam)
+        directory='results/ppo',
         ):
     # Setup losses and stuff
     # ----------------------------------------
+    saver = Saver()
     ob_space = env.observation_space
     ac_space = env.action_space
     pi = policy_func("pi", ob_space, ac_space) # Construct network for new policy
@@ -128,6 +159,9 @@ def learn(env, policy_func, *,
     U.initialize()
     adam.sync()
 
+    # Load the model
+    saver.restore_model(directory)
+
     # Prepare for rollouts
     # ----------------------------------------
     seg_gen = traj_segment_generator(pi, env, timesteps_per_batch, stochastic=True)
@@ -159,7 +193,8 @@ def learn(env, policy_func, *,
         else:
             raise NotImplementedError
 
-        logger.log("********** Iteration %i ************"%iters_so_far)
+        if MPI.COMM_WORLD.Get_rank()==0:
+            logger.log("********** Iteration %i ************"%iters_so_far)
 
         seg = seg_gen.__next__()
         add_vtarg_and_adv(seg, gamma, lam)
@@ -174,22 +209,24 @@ def learn(env, policy_func, *,
         if hasattr(pi, "ob_rms"): pi.ob_rms.update(ob) # update running mean/std for policy
 
         assign_old_eq_new() # set old parameter values to new parameter values
-        logger.log("Optimizing...")
-        logger.log(fmt_row(13, loss_names))
+        if MPI.COMM_WORLD.Get_rank()==0:
+            logger.log("Optimizing...")
+            logger.log(fmt_row(13, loss_names))
         # Here we do a bunch of optimization epochs over the data
         for _ in range(optim_epochs):
             losses = [] # list of tuples, each of which gives the loss for a minibatch
             for batch in d.iterate_once(optim_batchsize):
                 *newlosses, g = lossandgrad(batch["ob"], batch["ac"], batch["atarg"], batch["vtarg"], cur_lrmult)
-                adam.update(g, optim_stepsize * cur_lrmult) 
+                adam.update(g, optim_stepsize * cur_lrmult)
                 losses.append(newlosses)
-            logger.log(fmt_row(13, np.mean(losses, axis=0)))
+            if MPI.COMM_WORLD.Get_rank()==0:
+                logger.log(fmt_row(13, np.mean(losses, axis=0)))
 
         logger.log("Evaluating losses...")
         losses = []
         for batch in d.iterate_once(optim_batchsize):
             newlosses = compute_losses(batch["ob"], batch["ac"], batch["atarg"], batch["vtarg"], cur_lrmult)
-            losses.append(newlosses)            
+            losses.append(newlosses)
         meanlosses,_,_ = mpi_moments(losses, axis=0)
         logger.log(fmt_row(13, meanlosses))
         for (lossval, name) in zipsame(meanlosses, loss_names):
@@ -209,8 +246,30 @@ def learn(env, policy_func, *,
         logger.record_tabular("EpisodesSoFar", episodes_so_far)
         logger.record_tabular("TimestepsSoFar", timesteps_so_far)
         logger.record_tabular("TimeElapsed", time.time() - tstart)
+
         if MPI.COMM_WORLD.Get_rank()==0:
             logger.dump_tabular()
+
+        if MPI.COMM_WORLD.Get_rank()==0 and iters_so_far%5==0:
+            saver.save_model(directory, iters_so_far)
+            evaluate(eval_env, pi)
+
+
+def evaluate(env, pi):
+    """
+    Evaluate the policy (rendered)
+    """
+    stochastic = True
+    done = False
+    ob = env.reset()
+    while not done:
+        ac, vpred = pi.act(stochastic, ob)
+        ob, rew, done, _ = env.step(ac)
+        print('V:',vpred, 'Reward:', rew, 'A:',ac[0],ac[1])
+        env.render()
+        env.background = get_v_background(env, pi, stochastic)
+
+
 
 def flatten_lists(listoflists):
     return [el for list_ in listoflists for el in list_]

@@ -6,6 +6,7 @@ import pygame
 import pygame.gfxdraw
 import matplotlib
 import numpy as np
+import gym.spaces
 from pygame import pixelcopy
 from keras.models import Sequential
 from keras.layers import Input, LSTM, Dense
@@ -16,16 +17,12 @@ from .physics.universe import Universe
 import seaborn as sns; sns.set()
 
 
-class ObservationSpace:
-
-    def __init__(self, state_size):
-        self.shape = (state_size,)
+class ObservationSpace(gym.spaces.Box):
+    pass
 
 
-class ActionSpace:
-
-    def __init__(self, num_particles, action_dimensions):
-        self.shape = (action_dimensions,)
+class ActionSpace(gym.spaces.Box):
+    pass
 
 
 def ttl_color(ttl):
@@ -42,6 +39,10 @@ def clip(val, minimum, maximum):
     """Clip a value to [min,max]"""
     return max(min(val,maximum),minimum)
 
+def clipv(vector, space):
+    """Clip @vector to the gym space"""
+    return np.clip(vector, space.low, space.high)
+
 
 class LearningEnvironment:
     """
@@ -51,7 +52,7 @@ class LearningEnvironment:
     state_dimensions = 5 # The number of dimensions per particle (x,y,theta,tx,ty)
     state_history = 4
     state_buffer = []
-    max_steps = 400
+    max_steps = 100
 
     screen = None
     particle_speed = 20
@@ -78,8 +79,8 @@ class LearningEnvironment:
         """
         self.current_step = 0
         self.num_particles = num_particles
-        self.observation_space = ObservationSpace(num_particles * self.state_dimensions * self.state_history + 1)
-        self.action_space = ActionSpace(num_particles, self.action_dimensions)
+        self.observation_space = ObservationSpace(-1, 1, num_particles * self.state_dimensions * self.state_history + 1)
+        self.action_space = ActionSpace(-1, 1, self.action_dimensions)
 
         self.universe = Universe((self.screen_width, self.screen_height), self.spawn, self.discretization)
         self.universe.addFunctions(['move', 'bounce', 'brownian', 'collide', 'drag'])
@@ -110,10 +111,10 @@ class LearningEnvironment:
             self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
             pygame.display.set_caption('Bouncing Objects')
 
-    def step(self, action, n):
-        """
+    """
+    def step(self, action):
         Step forward n steps
-        """
+        n = 4
         rewards = 0
         for i in range(n):
             state, reward, done, info = self._step(action)
@@ -121,13 +122,17 @@ class LearningEnvironment:
             if done:
                 break
         return state, rewards, done, info
+    """
 
-
-    def _step(self, action):
+    def step(self, action):
         """
         Step the environment forward
         Return (observation, reward, done, info)
         """
+        # We clip the value even if the learning algorithm chooses not to
+        # This should be seen as a last resort, to prevent simulation instability
+        action = clipv(action, self.action_space)
+
         # Particle 1 is being controlled
         steering = action[0]
         throttle = action[1]
@@ -138,7 +143,7 @@ class LearningEnvironment:
         state = self.get_current_state()
         self.current_step += 1
 
-        if self.primary.atTarget(threshold=50) and self.primary.speed<0.9:
+        if self.primary.atTarget(threshold=50) and self.primary.speed<0.4:
             reward = 1
             done = True
         elif self.primary.collisions > 0:
@@ -152,13 +157,13 @@ class LearningEnvironment:
         excess = np.maximum(abs(action)-0.9, 0)
         reward -= np.sum(excess)
 
+        # Enforce speed limits
+        if self.primary.speed > 1:
+            reward -= 0.02
+
         # Enforce penalty regions
         if self.universe.isOnPenalty(self.primary):
-            reward = -0.02
-
-        # Enforce speed penalty
-        if abs(self.primary.speed) > 1:
-            reward = -abs(self.primary.speed)/100
+            reward -= 0.02
 
         info = {'step': self.current_step}
         return state, reward, done, info
@@ -323,6 +328,7 @@ class LearningEnvironment:
         #penalties = self.universe.penalties.flatten()/10
         state = sum(positions, [])
         state.append(int(self.primary.backend=="simulation"))
+        state = np.array(state)
         return state
 
 
@@ -369,7 +375,7 @@ if __name__=="__main__":
         done = False
         while not done:
             action = env.control_loop()
-            observation, reward, done, info = env.step(action, n=4)
+            observation, reward, done, info = env.step(action)
             rewards += reward
             if done:
                 total_rewards.append(rewards)

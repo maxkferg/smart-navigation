@@ -8,9 +8,10 @@ from .utils import addVectors, pol2cart
 from .config import *
 from .graphql import control_car
 
-STEERING_SENSITIVITY = 0.8 # Radians I rotate at speed=1 and steering=1
-ACCELERATION_SENSITIVITY = 0.1 # The amount I speed up at full throttle
-PIXELS_PER_SPEED = 30 # The pixels travelled at speed = 1
+MAX_SPEED = 1.4 # Maximum simulation speed
+STEERING_SENSITIVITY = 1.0 # Radians I rotate at speed=1 and steering=1
+ACCELERATION_SENSITIVITY = 0.2 # The amount I speed up at full throttle
+PIXELS_PER_SPEED = 20 # The pixels travelled at speed = 1
 
 db = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
@@ -24,7 +25,6 @@ def combine(p1, p2):
         p1.speed *= (p1.elasticity*p2.elasticity)
         p1.mass += p2.mass
         p1.collide_with = p2
-
 
 
 class Particle:
@@ -60,6 +60,13 @@ class Particle:
             #print("Loaded redis position", self.x, self.y)
 
 
+    def accelerate(self, target):
+        """Randomly accelerate toward some target speed"""
+        if not self.name=="primary":
+            diff = target-self.speed
+            self.speed += 0.1*diff
+
+
     def atTarget(self, threshold=10):
         """Return True if this particle is close enough to its target"""
         dx = abs(self.x - self.target.x)
@@ -86,7 +93,7 @@ class Particle:
         return (
             self.x / w,
             self.y / h,
-            self.angle / 2 * math.pi,
+            self.angle / (2 * math.pi),
             self.target.x / w,
             self.target.y / h
         )
@@ -100,6 +107,9 @@ class Particle:
         self.angle += steering * self.speed * STEERING_SENSITIVITY
         self.speed += throttle * ACCELERATION_SENSITIVITY
         self.control_signal = (steering,throttle)
+
+        if abs(self.speed) > MAX_SPEED:
+            self.speed = math.copysign(MAX_SPEED, self.speed)
 
         if self.backend=="redis":
             control_car(rotation=steering, throttle=throttle)
