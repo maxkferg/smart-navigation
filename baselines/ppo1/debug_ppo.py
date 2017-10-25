@@ -51,14 +51,11 @@ def get_v(env, pi, stochastic, n=40):
     x = x.flatten() # primary position is a grid
     y = y.flatten() # Primary position is a grid
 
-    # The number of points in each state history step
-    n_timestep = env.num_particles*env.state_dimensions
-
     # Set the primary position to (x,y) for all history
     state = env.get_current_state()
-    state_batch = np.tile(state, (n**2,1))
-    state_batch[:,0:-1:n_timestep] = x[:,None]
-    state_batch[:,1:-1:n_timestep] = y[:,None]
+    state_batch = np.tile(state, (n**2,1,1))
+    state_batch[:,:,0] = x[:,None]
+    state_batch[:,:,1] = y[:,None]
 
     # Get Q values
     q = pi.value(stochastic, state_batch)

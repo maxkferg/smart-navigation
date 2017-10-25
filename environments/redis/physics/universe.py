@@ -12,17 +12,13 @@ from .utils import addVectors, normalizeAngle
 class Universe:
     """ Defines the boundary of a simulation and its properties """
 
-    def __init__(self, size, spawn, discretization=5):
+    def __init__(self, size, discretization=5):
         (width, height) = size
         self.width = width
         self.height = height
         self.targets = []
         self.particles = []
         self.springs = []
-
-        self.discretization = discretization
-        self.penalties = np.full((discretization, discretization), 10) # ttl map
-        self.spawn = spawn # Bolean matrix of allowed spawn spots
 
         self.colour = (255,255,255)
         self.mass_of_air = 0.2
@@ -34,21 +30,27 @@ class Universe:
             'move': (1, lambda p: p.move()),
             'drag': (1, lambda p: p.experienceDrag()),
             'bounce': (1, lambda p: self.bounce(p)),
-            'accelerate': (1, lambda p: p.accelerate(random.random())),
             'collide': (2, lambda p1, p2: self.collide(p1, p2)),
             'combine': (2, lambda p1, p2: combine(p1, p2)),
+            'move_adversary': (1, lambda p: p.move_adversary()),
         }
 
-        self.penalties = 10 * np.array([
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
+        self.penalties = np.array([
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ])
+
+        self.spawn = np.copy(self.penalties)
+        self.discretization = self.spawn.shape[0]
+
 
     def addFunctions(self, function_list):
         for func in function_list:
@@ -116,7 +118,6 @@ class Universe:
             particle.y = random.uniform(ymin+particle.size, ymax-particle.size)
             particle.speed = 0.5 * random.random()
             particle.collisions = 0
-            self.penalties[yi,xi] = 10
 
         for target in self.targets:
             index = spawn_indicies.pop()
@@ -126,7 +127,6 @@ class Universe:
 
             target.x = random.uniform(xmin+target.radius, xmax-target.radius)
             target.y = random.uniform(ymin+target.radius, ymax-target.radius)
-            self.penalties[yi,xi] = 10
 
 
     def update(self):

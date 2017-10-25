@@ -229,7 +229,8 @@ def learn(env, eval_env, policy_func, *,
             if MPI.COMM_WORLD.Get_rank()==0:
                 logger.log(fmt_row(13, np.mean(losses, axis=0)))
 
-        logger.log("Evaluating losses...")
+        if MPI.COMM_WORLD.Get_rank()==0:
+            logger.log("Evaluating losses...")
         losses = []
         for batch in d.iterate_once(optim_batchsize):
             newlosses = compute_losses(batch["ob"], batch["ac"], batch["atarg"], batch["vtarg"], cur_lrmult)
@@ -253,6 +254,7 @@ def learn(env, eval_env, policy_func, *,
         logger.record_tabular("EpisodesSoFar", episodes_so_far)
         logger.record_tabular("TimestepsSoFar", timesteps_so_far)
         logger.record_tabular("TimeElapsed", time.time() - tstart)
+        logger.record_tabular("Learning Rate", cur_lrmult)
 
         if MPI.COMM_WORLD.Get_rank()==0:
             logger.dump_tabular()
@@ -269,12 +271,13 @@ def evaluate(env, pi):
     stochastic = True
     done = False
     ob = env.reset()
+    bg = get_v_background(env, pi, stochastic)
     while not done:
         ac, vpred = pi.act(stochastic, ob)
         ob, rew, done, _ = env.step(ac)
         print('V:',vpred, 'Reward:', rew, 'A:',ac[0],ac[1])
         env.render()
-        env.background = get_v_background(env, pi, stochastic)
+        env.background = bg
 
 
 

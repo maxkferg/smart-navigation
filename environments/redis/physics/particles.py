@@ -9,9 +9,10 @@ from .config import *
 from .graphql import control_car
 
 MAX_SPEED = 1.4 # Maximum simulation speed
-STEERING_SENSITIVITY = 1.0 # Radians I rotate at speed=1 and steering=1
-ACCELERATION_SENSITIVITY = 0.2 # The amount I speed up at full throttle
-PIXELS_PER_SPEED = 20 # The pixels travelled at speed = 1
+STEERING_SENSITIVITY = 0.3 # Radians I rotate at speed=1 and steering=1
+ACCELERATION_SENSITIVITY = 0.5 # The amount I speed up at full throttle
+PIXELS_PER_SPEED = 10 # The pixels travelled at speed = 1
+ADVERSARY_SPEED = 1.2
 
 db = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
@@ -59,12 +60,13 @@ class Particle:
             self.y = CAMERA_SCALE_Y * (position["y"]+position["height"]/2)
             #print("Loaded redis position", self.x, self.y)
 
-
-    def accelerate(self, target):
-        """Randomly accelerate toward some target speed"""
-        if not self.name=="primary":
-            diff = target-self.speed
-            self.speed += 0.1*diff
+    def move_adversary(self):
+        """Move randomly in a correlated manner"""
+        if self.name!="primary":
+            self.speed = ADVERSARY_SPEED + 0.1 * random.random()
+            self.angle += STEERING_SENSITIVITY * random.uniform(-1,1)
+            self.speed = np.clip(self.speed, 0, MAX_SPEED)
+            self.angle = np.clip(self.angle, 0, 2*math.pi)
 
 
     def atTarget(self, threshold=10):

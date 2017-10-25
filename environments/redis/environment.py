@@ -60,30 +60,19 @@ class LearningEnvironment:
     screen_height = 800
     background = None
 
-    discretization = 8
-    spawn = np.array([
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 1, 1, 1, 1, 1, 0],
-        [0, 1, 1, 1, 1, 1, 1, 0],
-        [0, 1, 1, 1, 1, 1, 1, 0],
-        [0, 1, 1, 1, 1, 1, 1, 0],
-        [0, 1, 1, 1, 1, 1, 1, 0],
-        [0, 1, 1, 1, 1, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-    ])
-
-
-    def __init__(self, num_particles=2, particle_size=50, disable_render=False):
+    def __init__(self, num_particles=2, particle_size=30, disable_render=False):
         """
         @history: A vector where each row is a previous state
         """
         self.current_step = 0
         self.num_particles = num_particles
-        self.observation_space = ObservationSpace(-1, 1, num_particles * self.state_dimensions * self.state_history + 1)
+        self.state_size = num_particles*self.state_dimensions + self.action_dimensions
+        self.observation_space = ObservationSpace(-1, 1, shape=(self.state_history, self.state_size))
         self.action_space = ActionSpace(-1, 1, self.action_dimensions)
+        self.previous_action = np.zeros(self.action_space.shape)
 
-        self.universe = Universe((self.screen_width, self.screen_height), self.spawn, self.discretization)
-        self.universe.addFunctions(['move', 'bounce', 'brownian', 'collide', 'drag'])
+        self.universe = Universe((self.screen_width, self.screen_height))
+        self.universe.addFunctions(['move', 'bounce', 'collide', 'drag', 'move_adversary'])
         self.universe.mass_of_air = 0.1
 
         # Add all the particles
@@ -111,18 +100,6 @@ class LearningEnvironment:
             self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
             pygame.display.set_caption('Bouncing Objects')
 
-    """
-    def step(self, action):
-        Step forward n steps
-        n = 4
-        rewards = 0
-        for i in range(n):
-            state, reward, done, info = self._step(action)
-            rewards += reward
-            if done:
-                break
-        return state, rewards, done, info
-    """
 
     def step(self, action):
         """
@@ -136,6 +113,7 @@ class LearningEnvironment:
         # Particle 1 is being controlled
         steering = action[0]
         throttle = action[1]
+        self.previous_action = action
         self.primary.control(steering, throttle)
 
         # Step forward one timestep
@@ -220,12 +198,13 @@ class LearningEnvironment:
         self.draw_circle(int(t.x), int(t.y), int(t.radius/4), t.color, filled=True)
 
         # Draw the primary particle direction
-        p = self.primary
-        dx, dy = p.get_speed_vector(scale=100)
-        pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (0,0,0))
+        for p in self.universe.particles:
+            dx, dy = p.get_speed_vector(scale=20)
+            pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (0,0,0))
 
         # Draw the control vector
-        dx, dy = p.get_control_vector(scale=100)
+        p = self.primary
+        dx, dy = p.get_control_vector(scale=20)
         pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (255,0,0))
 
         self.flip_screen()
@@ -315,20 +294,21 @@ class LearningEnvironment:
     def get_current_state(self):
         """
         Return a representation of the simulation state
+        The return array is size (self.state_history, self.state_size)
         """
+        # Get the current state vector
         state = []
         for i,particle in enumerate(self.universe.particles):
             state.extend(particle.get_state_vector(self.screen_width, self.screen_height))
+        state.extend(self.previous_action)
+
         # Append to the state buffer
         while len(self.state_buffer) <= self.state_history:
             self.state_buffer.insert(0,state)
         self.state_buffer.pop()
 
-        positions = self.state_buffer
-        #penalties = self.universe.penalties.flatten()/10
-        state = sum(positions, [])
-        state.append(int(self.primary.backend=="simulation"))
-        state = np.array(state)
+        # Convert to numpy array (self.state_history, self.state_size)
+        state = np.array(self.state_buffer)
         return state
 
 
