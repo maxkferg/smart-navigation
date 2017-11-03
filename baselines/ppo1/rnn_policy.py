@@ -70,7 +70,7 @@ class RnnPolicy(object):
         cell = tf.nn.rnn_cell.GRUCell(rnn_hid_units)
 
         # generate prediction
-        outputs, states = tf.nn.static_rnn(cells, x, dtype=tf.float32)
+        outputs, states = tf.nn.static_rnn(cell, x, dtype=tf.float32)
 
         # We only return the last output
         return outputs[-1]
