@@ -60,7 +60,7 @@ class LearningEnvironment:
     screen_height = 800
     background = None
 
-    def __init__(self, num_particles=2, particle_size=30, disable_render=False):
+    def __init__(self, num_particles=2, particle_size=40, disable_render=False):
         """
         @history: A vector where each row is a previous state
         """
@@ -121,11 +121,11 @@ class LearningEnvironment:
         state = self.get_current_state()
         self.current_step += 1
 
-        if self.primary.atTarget(threshold=50) and self.primary.speed<0.4:
+        if self.primary.atTarget(threshold=20) and self.primary.speed<0.2:
             reward = 1
             done = True
         elif self.primary.collisions > 0:
-            reward = -1/self.num_particles
+            reward = -1
             done = True
         else:
             reward = 0

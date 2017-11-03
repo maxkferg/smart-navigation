@@ -37,7 +37,10 @@ class RnnPolicy(object):
 
         last_out = obz
         for i in range(num_hid_layers):
+            last_in = last_out
             last_out = tf.nn.tanh(U.dense(last_out, hid_size, "polfc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
+            last_out = last_in+last_out
+
         if gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box):
             mean = U.dense(last_out, pdtype.param_shape()[0]//2, "polfinal", U.normc_initializer(0.01))
             logstd = tf.get_variable(name="logstd", shape=[1, pdtype.param_shape()[0]//2], initializer=tf.zeros_initializer())

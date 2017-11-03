@@ -271,14 +271,26 @@ def evaluate(env, pi):
     stochastic = True
     done = False
     ob = env.reset()
-    bg = get_v_background(env, pi, stochastic)
     while not done:
         ac, vpred = pi.act(stochastic, ob)
         ob, rew, done, _ = env.step(ac)
         print('V:',vpred, 'Reward:', rew, 'A:',ac[0],ac[1])
         env.render()
-        env.background = bg
+        #env.background = get_v_background(env, pi, stochastic)
 
+
+def run_evaluation(env, policy_func, directory):
+    """
+    Continuosly evaluate the policy
+    """
+    saver = Saver()
+    ob_space = env.observation_space
+    ac_space = env.action_space
+    pi = policy_func("pi", ob_space, ac_space) # Construct network for new policy
+    U.initialize()
+    saver.restore_model(directory) # Load weights
+    while True:
+        evaluate(env, pi)
 
 
 def flatten_lists(listoflists):

@@ -9,7 +9,7 @@ from .config import *
 from .graphql import control_car
 
 MAX_SPEED = 1.4 # Maximum simulation speed
-STEERING_SENSITIVITY = 0.3 # Radians I rotate at speed=1 and steering=1
+STEERING_SENSITIVITY = 0.25 # Radians I rotate at speed=1 and steering=1
 ACCELERATION_SENSITIVITY = 0.5 # The amount I speed up at full throttle
 PIXELS_PER_SPEED = 10 # The pixels travelled at speed = 1
 ADVERSARY_SPEED = 1.2
