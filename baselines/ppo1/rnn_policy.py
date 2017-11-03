@@ -67,9 +67,7 @@ class RnnPolicy(object):
         x = tf.unstack(obz, num=rnn_history_steps, axis=1)
 
         # 1-layer GRU with n_hidden units.
-        cells = [tf.nn.rnn_cell.GRUCell(rnn_hid_units) for i in range(rnn_num_layers)]
-
-        cells = tf.nn.rnn_cell.MultiRNNCell(cells)
+        cell = tf.nn.rnn_cell.GRUCell(rnn_hid_units)
 
         # generate prediction
         outputs, states = tf.nn.static_rnn(cells, x, dtype=tf.float32)
