@@ -118,7 +118,8 @@ def learn(env, eval_env, policy_func, *,
         callback=None, # you can do anything in the callback, since it takes locals(), globals()
         adam_epsilon=1e-5,
         schedule='constant', # annealing for stepsize parameters (epsilon and adam)
-        directory='results/ppo'):
+        directory='results/ppo',
+        render=False):
     # Setup losses and stuff
     # ----------------------------------------
     saver = Saver()
@@ -260,10 +261,10 @@ def learn(env, eval_env, policy_func, *,
 
         if MPI.COMM_WORLD.Get_rank()==0 and iters_so_far%5==0:
             saver.save_model(directory, iters_so_far)
-            evaluate(eval_env, pi)
+            evaluate(eval_env, pi, render)
 
 
-def evaluate(env, pi):
+def evaluate(env, pi, render):
     """
     Evaluate the policy (rendered)
     """
@@ -274,11 +275,12 @@ def evaluate(env, pi):
         ac, vpred = pi.act(stochastic, ob)
         ob, rew, done, _ = env.step(ac)
         print('V:',vpred, 'Reward:', rew, 'A:',ac[0],ac[1])
-        env.render()
-        #env.background = get_v_background(env, pi, stochastic)
+        if render:
+            env.render()
+            #env.background = get_v_background(env, pi, stochastic)
 
 
-def run_evaluation(env, policy_func, directory):
+def run_evaluation(env, policy_func, directory, render):
     """
     Continuosly evaluate the policy
     """
@@ -289,7 +291,7 @@ def run_evaluation(env, policy_func, directory):
     U.initialize()
     saver.restore_model(directory) # Load weights
     while True:
-        evaluate(env, pi)
+        evaluate(env, pi, render)
 
 
 def flatten_lists(listoflists):

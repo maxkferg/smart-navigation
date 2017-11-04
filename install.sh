@@ -1,3 +1,5 @@
+ # Results directory
+mkdir -p results/ppo
 
 # GYM
 git clone https://github.com/openai/gym
