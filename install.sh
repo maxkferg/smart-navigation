@@ -4,14 +4,16 @@ mkdir -p results/ppo
 # GYM
 git clone https://github.com/openai/gym
 cd gym
-pip install -e . # minimal install
+pip3 install -e . # minimal install
+cd ..
 
 # MPI
 sudo apt-get install -y mpich
-pip3 install mpi4py
+sudo pip3 install mpi4py
 
 # OPENCV DEPS
 sudo apt-get install -y qt-sdk
+sudo apt-get install -y python3-tk
 sudo apt-get install -y build-essential checkinstall cmake pkg-config yasm gfortran git
 sudo apt-get install -y libjpeg8-dev libjasper-dev libpng12-dev
 sudo apt-get install -y libtiff5-dev
@@ -24,7 +26,7 @@ sudo apt-get install -y libfaac-dev libmp3lame-dev libtheora-dev
 sudo apt-get install -y libvorbis-dev libxvidcore-dev
 sudo apt-get install -y libopencore-amrnb-dev libopencore-amrwb-dev
 sudo apt-get install -y x264 v4l-utils
-sudo apt-get install python3-dev python3-pip
+sudo apt-get install -y python3-dev python3-pip
 sudo -H pip3 install -U pip numpy
 
 git clone https://github.com/opencv/opencv.git
@@ -61,3 +63,11 @@ sudo ldconfig
 #find /usr/local/lib/ -type f -name "cv2*.so"
 #/usr/local/lib/python3.5/site-packages/cv2.cpython-35m-x86_64-linux-gnu.so
 #ln -s /usr/local/lib/python3.6/dist-packages/cv2.cpython-36m-x86_64-linux-gnu.so cv2.so
+
+# Move back to the root directory
+cd ../..
+
+# Install python requirements
+sudo pip3 install -r requirements.txt
+
+
