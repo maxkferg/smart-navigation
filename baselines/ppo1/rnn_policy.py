@@ -36,7 +36,6 @@ class RnnPolicy(object):
         self.vpred = U.dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:,0]
 
         # Apply rnn_to reduce history
-        last_out = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
         for i in range(num_hid_layers):
             last_in = last_out
             last_out = tf.nn.relu(U.dense(last_out, hid_size, "polfc%i"%(i+1), weight_init=U.normc_initializer(1.0)))

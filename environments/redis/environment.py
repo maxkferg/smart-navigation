@@ -121,8 +121,8 @@ class LearningEnvironment:
         state = self.get_current_state()
         self.current_step += 1
 
-        if self.primary.atTarget(threshold=20) and self.primary.speed<0.2:
-            reward = 1
+        if self.primary.atTarget(threshold=50) and self.primary.speed<0.4:
+            reward = 10
             done = True
         elif self.primary.collisions > 0:
             reward = -1
@@ -137,7 +137,7 @@ class LearningEnvironment:
 
         # Enforce speed limits
         if self.primary.speed > 1:
-            reward -= 0.02
+            reward -= 0.002
 
         # Enforce penalty regions
         if self.universe.isOnPenalty(self.primary):
