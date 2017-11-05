@@ -37,10 +37,7 @@ class Saver:
 
 def traj_segment_generator(pi, env, horizon, stochastic):
     t = 0
-    action = [-0.3, 0.3]
-    action=np.array(action)
-    ac=action
-    #ac = env.action_space.sample() # not used, just so we have the datatype
+    ac = env.action_space.sample() # not used, just so we have the datatype
     new = True # marks if we're on first timestep of an episode
     ob = env.reset()
 

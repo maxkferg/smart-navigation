@@ -38,21 +38,25 @@ class RnnPolicy(object):
         obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
 
         # Apply rnn_to reduce history
-        last_out = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
-        for i in range(num_hid_layers):
-            last_out = resnet(last_out, hid_size, "vffc%i"%(i+1))
-        self.vpred = U.dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:,0]
+        with tf.variable_scope("vffc"):
+            state = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
+            for i in range(num_hid_layers):
+                last_out = resnet(state, hid_size, "vffc%i"%(i+1))
+            self.vpred = U.dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:,0]
 
         # Apply rnn_to reduce history
-        for i in range(num_hid_layers):
-            last_out = resnet(last_out, hid_size, "polfc%i"%(i+1))
+        with tf.variable_scope("polfc"):
+            state = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
+            for i in range(num_hid_layers):
+                last_out = resnet(state, hid_size, "polfc%i"%(i+1))
 
-        if gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box):
-            mean = U.dense(last_out, pdtype.param_shape()[0]//2, "polfinal", U.normc_initializer(0.01))
-            logstd = tf.get_variable(name="logstd", shape=[1, pdtype.param_shape()[0]//2], initializer=tf.zeros_initializer())
-            pdparam = U.concatenate([mean, mean * 0.0 + logstd], axis=1)
-        else:
-            pdparam = U.dense(last_out, pdtype.param_shape()[0], "polfinal", U.normc_initializer(0.01))
+            if gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box):
+                mean = U.dense(last_out, pdtype.param_shape()[0]//2, "polfinal", U.normc_initializer(0.01))
+                logstd = tf.get_variable(name="logstd", shape=[1, pdtype.param_shape()[0]//2], initializer=tf.zeros_initializer())
+                pdparam = U.concatenate([mean, mean * 0.0 + logstd], axis=1)
+            else:
+                raise
+                pdparam = U.dense(last_out, pdtype.param_shape()[0], "polfinal", U.normc_initializer(0.01))
 
         self.pd = pdtype.pdfromflat(pdparam)
 
