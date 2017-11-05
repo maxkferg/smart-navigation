@@ -10,10 +10,10 @@ from baselines.common.distributions import make_pdtype
 def resnet(inputs, hid_size, name):
     x = U.dense(inputs, hid_size, "%s_dense1"%name, weight_init=U.normc_initializer(1.0))
     x = tf.contrib.layers.batch_norm(x)
-    x = tf.nn.tanh(x)
+    x = tf.nn.relu(x)
     x = U.dense(x, hid_size, "%s_dense2"%name, weight_init=U.normc_initializer(1.0))
     x = tf.contrib.layers.batch_norm(x)
-    x = tf.nn.tanh(x+inputs)
+    x = tf.nn.relu(x+inputs)
     return x
 
 
@@ -72,8 +72,8 @@ class RnnPolicy(object):
 
         x = tf.unstack(obz, num=rnn_history_steps, axis=1)
 
-        # 1-layer GRU with n_hidden units.
-        cell = tf.nn.rnn_cell.GRUCell(rnn_hid_units)
+        # 1-layer Basic Cell with n_hidden units.
+        cell = tf.nn.rnn_cell.BasicRNNCell(rnn_hid_units)
 
         # generate prediction
         outputs, states = tf.nn.static_rnn(cell, x, dtype=tf.float32)

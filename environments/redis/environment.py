@@ -65,6 +65,7 @@ class LearningEnvironment:
         @history: A vector where each row is a previous state
         """
         self.current_step = 0
+        self.reward_so_far = 0
         self.num_particles = num_particles
         self.state_size = num_particles*self.state_dimensions + self.action_dimensions
         self.observation_space = ObservationSpace(-1, 1, shape=(self.state_history, self.state_size))
@@ -137,11 +138,16 @@ class LearningEnvironment:
 
         # Enforce speed limits
         if self.primary.speed > 1:
-            reward -= 0.002
+            reward -= 0.02
 
         # Enforce penalty regions
         if self.universe.isOnPenalty(self.primary):
             reward -= 0.02
+
+        # Reward clipping
+        self.reward_so_far += reward
+        if self.reward_so_far <= -1:
+            done = True
 
         info = {'step': self.current_step}
         return state, reward, done, info
@@ -156,6 +162,8 @@ class LearningEnvironment:
         self.primary.speed = 0
 
         self.current_step = 0
+
+        self.reward_so_far = 0
 
         return self.get_current_state()
 
