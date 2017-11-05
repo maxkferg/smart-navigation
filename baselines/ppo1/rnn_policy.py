@@ -9,10 +9,10 @@ from baselines.common.distributions import make_pdtype
 
 def resnet(inputs, hid_size, name):
     x = U.dense(inputs, hid_size, "%s_dense1"%name, weight_init=U.normc_initializer(1.0))
-    x = tf.contrib.layers.batch_norm(x)
+    #x = tf.contrib.layers.batch_norm(x)
     x = tf.nn.relu(x)
     x = U.dense(x, hid_size, "%s_dense2"%name, weight_init=U.normc_initializer(1.0))
-    x = tf.contrib.layers.batch_norm(x)
+    #x = tf.contrib.layers.batch_norm(x)
     x = tf.nn.relu(x+inputs)
     return x
 
@@ -32,10 +32,10 @@ class RnnPolicy(object):
 
         ob = U.get_placeholder(name="ob", dtype=tf.float32, shape=[sequence_length] + list(ob_space.shape))
 
-        with tf.variable_scope("obfilter"):
-            self.ob_rms = RunningMeanStd(shape=ob_space.shape)
+        #with tf.variable_scope("obfilter"):
+        #    self.ob_rms = RunningMeanStd(shape=ob_space.shape)
 
-        obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
+        #obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
 
         # Apply rnn_to reduce history
         with tf.variable_scope("vffc"):
