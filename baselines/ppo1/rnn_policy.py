@@ -7,6 +7,16 @@ import gym.spaces
 from baselines.common.distributions import make_pdtype
 
 
+def resnet(inputs, hid_size, name):
+    x = U.dense(last_out, hid_size, "%s_dense1"%name, weight_init=U.normc_initializer(1.0))
+    x = tf.contrib.layers.batch_norm(x)
+    x = tf.nn.relu(x)
+    x = U.dense(last_out, hid_size, "%s_dense1"%name, weight_init=U.normc_initializer(1.0))
+    x = tf.contrib.layers.batch_norm(x)
+    x = tf.nn.relu(x+inputs)
+    return x
+
+
 class RnnPolicy(object):
     recurrent = False
     def __init__(self, name, *args, **kwargs):
@@ -30,16 +40,12 @@ class RnnPolicy(object):
         # Apply rnn_to reduce history
         last_out = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
         for i in range(num_hid_layers):
-            last_in = last_out
-            last_out = tf.nn.relu(U.dense(last_out, hid_size, "vffc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
-            last_out = last_in+last_out
+            last_out = resnet(last_out, hid_size, "vffc%i"%(i+1))
         self.vpred = U.dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:,0]
 
         # Apply rnn_to reduce history
         for i in range(num_hid_layers):
-            last_in = last_out
-            last_out = tf.nn.relu(U.dense(last_out, hid_size, "polfc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
-            last_out = last_in+last_out
+            last_out = resnet(last_out, hid_size, "polfc%i"%(i+1))
 
         if gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box):
             mean = U.dense(last_out, pdtype.param_shape()[0]//2, "polfinal", U.normc_initializer(0.01))
