@@ -10,7 +10,7 @@ from mpi4py import MPI
 
 
 PARTICLES = 2
-TIMESTEPS = 1e7 #3e7
+TIMESTEPS = 4e7 #3e7
 
 
 def train(env_id, num_timesteps, seed, evaluate, render):
@@ -29,7 +29,7 @@ def train(env_id, num_timesteps, seed, evaluate, render):
     eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=disable_render)
 
     def policy_fn(name, ob_space, ac_space):
-        return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=256, rnn_hid_units=256, num_hid_layers=4)
+        return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=128, rnn_hid_units=128, num_hid_layers=4)
     #env = bench.Monitor(env, logger.get_dir() and
     #    os.path.join(logger.get_dir(), "monitor.json"))
     #env.seed(seed)
@@ -41,8 +41,8 @@ def train(env_id, num_timesteps, seed, evaluate, render):
         pposgd_simple.learn(train_env, eval_env, policy_fn,
                 max_timesteps=num_timesteps,
                 timesteps_per_batch=2048,
-                clip_param=0.2, entcoeff=0.0,
-                optim_epochs=10, optim_stepsize=1e-4, optim_batchsize=64,
+                clip_param=0.2, entcoeff=0.002,
+                optim_epochs=10, optim_stepsize=2e-4, optim_batchsize=64,
                 gamma=0.995, lam=0.95, schedule='linear',
                 render=render
             )

@@ -28,17 +28,18 @@ class RnnPolicy(object):
         obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
 
         # Apply rnn_to reduce history
-        obz = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
-
-        last_out = obz
-        for i in range(num_hid_layers):
-            last_out = tf.nn.tanh(U.dense(last_out, hid_size, "vffc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
-        self.vpred = U.dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:,0]
-
-        last_out = obz
+        last_out = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
         for i in range(num_hid_layers):
             last_in = last_out
-            last_out = tf.nn.tanh(U.dense(last_out, hid_size, "polfc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
+            last_out = tf.nn.relu(U.dense(last_out, hid_size, "vffc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
+            last_out = last_in+last_out
+        self.vpred = U.dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:,0]
+
+        # Apply rnn_to reduce history
+        last_out = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
+        for i in range(num_hid_layers):
+            last_in = last_out
+            last_out = tf.nn.relu(U.dense(last_out, hid_size, "polfc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
             last_out = last_in+last_out
 
         if gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box):

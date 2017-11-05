@@ -4,10 +4,11 @@ mkdir -p results/ppo
 # GYM
 git clone https://github.com/openai/gym
 cd gym
-pip3 install -e . # minimal install
+sudo pip3 install -e . # minimal install
 cd ..
 
 # MPI
+sudo apt-get update
 sudo apt-get install -y mpich
 sudo pip3 install mpi4py
 
