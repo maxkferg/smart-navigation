@@ -36,6 +36,7 @@ class RnnPolicy(object):
         #    self.ob_rms = RunningMeanStd(shape=ob_space.shape)
 
         #obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
+        obz = ob
 
         # Apply rnn_to reduce history
         with tf.variable_scope("vffc"):
