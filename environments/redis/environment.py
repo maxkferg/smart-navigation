@@ -123,7 +123,7 @@ class LearningEnvironment:
         self.current_step += 1
 
         if self.primary.atTarget(threshold=50) and self.primary.speed<0.4:
-            reward = 10
+            reward = 1
             done = True
         elif self.primary.collisions > 0:
             reward = -1
