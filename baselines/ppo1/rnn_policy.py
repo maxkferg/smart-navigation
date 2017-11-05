@@ -11,7 +11,7 @@ def resnet(inputs, hid_size, name):
     x = U.dense(inputs, hid_size, "%s_dense1"%name, weight_init=U.normc_initializer(1.0))
     x = tf.contrib.layers.batch_norm(x)
     x = tf.nn.relu(x)
-    x = U.dense(x, hid_size, "%s_dense1"%name, weight_init=U.normc_initializer(1.0))
+    x = U.dense(x, hid_size, "%s_dense2"%name, weight_init=U.normc_initializer(1.0))
     x = tf.contrib.layers.batch_norm(x)
     x = tf.nn.relu(x+inputs)
     return x
