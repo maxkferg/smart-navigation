@@ -146,7 +146,7 @@ class LearningEnvironment:
 
         # Reward clipping
         self.reward_so_far += reward
-        if self.reward_so_far <= -1:
+        if self.reward_so_far <= -10:
             done = True
 
         info = {'step': self.current_step}
