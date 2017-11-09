@@ -14,6 +14,11 @@ class Target:
         self.radius = radius
         self.color = color
 
+    def clone(self):
+        position = (self.x, self.y)
+        copy = Target(position, self.radius, self.color)
+        return copy
+
     def respawn(self, screen_width, screen_height):
         """ Respawn the target """
         self.x = np.random.randint(low=self.radius, high=(screen_width-self.radius))

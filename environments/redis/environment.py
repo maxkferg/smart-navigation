@@ -7,6 +7,7 @@ import pygame.gfxdraw
 import matplotlib
 import numpy as np
 import gym.spaces
+from collections import deque
 from pygame import pixelcopy
 from keras.models import Sequential
 from keras.layers import Input, LSTM, Dense
@@ -44,6 +45,23 @@ def clipv(vector, space):
     return np.clip(vector, space.low, space.high)
 
 
+class Snapshot():
+    """A snapshot of a previous environment"""
+    def __init__(self, universe):
+        self.particles = [p.clone() for p in universe.particles]
+        self.targets = [t.clone() for t in universe.targets]
+        # Link particle clones to target clones
+        for particle,target in zip(self.particles, self.targets):
+            particle.target = target
+
+    def modifyUniverse(self, universe):
+        """Modify the universe object to look more like this snapshot"""
+        # Replace with the new particles
+        universe.particles = self.particles
+        universe.targets = self.targets
+
+
+
 class LearningEnvironment:
     """
     Environment that an algorithm can play with
@@ -53,12 +71,15 @@ class LearningEnvironment:
     state_history = 4
     state_buffer = []
     max_steps = 100
+    record_catastrophies = True
 
     screen = None
     particle_speed = 20
     screen_width = 800
     screen_height = 800
     background = None
+    snapshots = deque(maxlen=10)
+    catastrophies = deque(maxlen=1000)
 
     def __init__(self, num_particles=2, particle_size=40, disable_render=False):
         """
@@ -120,6 +141,7 @@ class LearningEnvironment:
         # Step forward one timestep
         self.universe.update()
         state = self.get_current_state()
+        self.snapshots.append(Snapshot(self.universe))
         self.current_step += 1
 
         if self.primary.atTarget(threshold=50) and self.primary.speed<0.4:
@@ -149,11 +171,15 @@ class LearningEnvironment:
         if self.reward_so_far <= -10:
             done = True
 
+        # Record this as a catastrophy
+        if self.record_catastrophies and reward <= -1:
+            self.catastrophies.extend(self.snapshots)
+
         info = {'step': self.current_step}
         return state, reward, done, info
 
 
-    def reset(self):
+    def reset(self, catastrophy=False):
         """Respawn the particles and the targets"""
         self.universe.reset()
 
@@ -164,6 +190,17 @@ class LearningEnvironment:
         self.current_step = 0
 
         self.reward_so_far = 0
+
+        self.snapshots.clear
+
+        if catastrophy and len(self.catastrophies):
+            index = random.randint(0, len(self.catastrophies)-1)
+            example = self.catastrophies[index]
+            example.modifyUniverse(self.universe)
+            self.primary = self.universe.particles[0]
+            self.record_catastrophies = False
+        else:
+            self.record_catastrophies = True
 
         return self.get_current_state()
 

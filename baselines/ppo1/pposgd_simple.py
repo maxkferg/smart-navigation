@@ -1,4 +1,5 @@
 import os
+import random
 from baselines.common import Dataset, explained_variance, fmt_row, zipsame
 from baselines import logger
 import baselines.common.tf_util as U
@@ -35,7 +36,7 @@ class Saver:
             print(e)
 
 
-def traj_segment_generator(pi, env, horizon, stochastic):
+def traj_segment_generator(pi, env, horizon, stochastic, catastrophy=0.5):
     t = 0
     ac = env.action_space.sample() # not used, just so we have the datatype
     new = True # marks if we're on first timestep of an episode
@@ -85,7 +86,8 @@ def traj_segment_generator(pi, env, horizon, stochastic):
             ep_lens.append(cur_ep_len)
             cur_ep_ret = 0
             cur_ep_len = 0
-            ob = env.reset()
+            cat = random.random()<catastrophy
+            ob = env.reset(cat)
         t += 1
 
 def add_vtarg_and_adv(seg, gamma, lam):
@@ -267,14 +269,14 @@ def evaluate(env, pi, render):
     """
     stochastic = True
     done = False
-    ob = env.reset()
+    ob = env.reset(catastrophy=False)
     while not done:
         ac, vpred = pi.act(stochastic, ob)
         ob, rew, done, _ = env.step(ac)
         print('V:',vpred, 'Reward:', rew, 'A:',ac[0],ac[1])
         if render:
             env.render()
-            #env.background = get_v_background(env, pi, stochastic)
+            env.background = get_v_background(env, pi, stochastic)
 
 
 def run_evaluation(env, policy_func, directory, render):

@@ -49,6 +49,28 @@ class Particle:
         self.collisions = 0
         self.control_signal = (0,0)
 
+
+    def clone(self):
+        """Return a deep copy of this object. The clone uses the same target as before"""
+        position = (self.x, self.y)
+        copy = Particle(position, size=self.size)
+        copy.size = self.size
+        copy.colour = self.colour
+        copy.thickness = self.thickness
+        copy.angle = self.angle
+        copy.speed = self.speed
+        copy.mass = self.mass
+        copy.elasticity = self.elasticity
+        copy.target = self.target
+        copy.noise = self.noise
+        copy.backend = self.backend
+        copy.name = self.name
+        copy.drag = self.drag
+        copy.collisions = self.collisions
+        copy.control_signal = self.control_signal
+        return copy
+
+
     def move(self):
         """ Update position based on speed, angle """
         if self.backend=="simulation":

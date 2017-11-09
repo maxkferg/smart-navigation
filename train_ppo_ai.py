@@ -29,7 +29,7 @@ def train(env_id, num_timesteps, seed, evaluate, render):
     eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=disable_render)
 
     def policy_fn(name, ob_space, ac_space):
-        return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=64, rnn_hid_units=64, num_hid_layers=1)
+        return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=64, rnn_hid_units=64, num_hid_layers=2)
     #env = bench.Monitor(env, logger.get_dir() and
     #    os.path.join(logger.get_dir(), "monitor.json"))
     #env.seed(seed)
