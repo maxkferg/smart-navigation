@@ -103,7 +103,7 @@ def control_car(rotation, throttle, reset=False):
         }
     ''')
 
-    print('Sending control signal',(rotation,throttle,reset))
+    print('Sending rotation: %.3f, throttle: %.3f, reset: %i'%(rotation,throttle,reset))
 
     return client.execute(query, {
         'right': float(rotation),

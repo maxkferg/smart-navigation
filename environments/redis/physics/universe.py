@@ -37,14 +37,14 @@ class Universe:
 
         self.penalties = np.array([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 1, 0, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+            [0, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+            [0, 1, 1, 0, 0, 1, 1, 1, 1, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 0, 0, 1, 1, 1, 1, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ])
 
@@ -69,12 +69,13 @@ class Universe:
         size = kargs.get('radius', random.randint(10, 20))
         mass = kargs.get('mass', random.randint(100, 10000))
         drag = kargs.get('drag', random.random())
+        ghost = kargs.get('ghost', False)
         target = kargs.get('target', None)
         backend = kargs.get('backend', 'simulation')
         x = kargs.get('x', random.uniform(size, self.width - size))
         y = kargs.get('y', random.uniform(size, self.height - size))
 
-        particle = Particle((x, y), size, target=target, mass=mass, name=name, backend=backend)
+        particle = Particle((x, y), size, target=target, mass=mass, name=name, backend=backend, ghost=ghost)
         particle.speed = kargs.get('speed', random.random())
         particle.angle = kargs.get('angle', random.uniform(0, math.pi*2))
         particle.colour = kargs.get('color', (0,0,0))
@@ -110,10 +111,11 @@ class Universe:
         for particle in self.particles:
             # Select a random square
             index = spawn_indicies.pop()
-            xi = spawn_options[0][index]
-            yi = spawn_options[1][index]
+            xi = spawn_options[1][index] # Column
+            yi = spawn_options[0][index] # Row
             xmin, xmax, ymin, ymax = self._get_grid_cell_bounds(xi, yi)
 
+            particle.reset()
             particle.x = random.uniform(xmin+particle.size, xmax-particle.size)
             particle.y = random.uniform(ymin+particle.size, ymax-particle.size)
             particle.speed = 0.5 * random.random()
@@ -121,8 +123,8 @@ class Universe:
 
         for target in self.targets:
             index = spawn_indicies.pop()
-            xi = spawn_options[0][index]
-            yi = spawn_options[1][index]
+            xi = spawn_options[1][index] # Column
+            yi = spawn_options[0][index] # Row
             xmin, xmax, ymin, ymax = self._get_grid_cell_bounds(xi, yi)
 
             target.x = random.uniform(xmin+target.radius, xmax-target.radius)
@@ -176,6 +178,9 @@ class Universe:
     def collide(self, p1, p2):
         """ Tests whether two particles overlap
             If they do, make them bounce, i.e. update their angle, speed and position """
+
+        if p1.ghost or p2.ghost:
+            return
 
         dx = p1.x - p2.x
         dy = p1.y - p2.y

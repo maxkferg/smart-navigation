@@ -10,10 +10,11 @@ from mpi4py import MPI
 
 
 PARTICLES = 2
-TIMESTEPS = 4e7 #3e7
+TIMESTEPS = 10e7 #3e7
+DIRECTORY = 'results/ppo-cloud'
 
 
-def train(env_id, num_timesteps, seed, evaluate, render):
+def train(env_id, num_timesteps, seed, evaluate, render, physics):
     from baselines.ppo1.rnn_policy import RnnPolicy
     from baselines.ppo1 import pposgd_simple
 
@@ -25,8 +26,8 @@ def train(env_id, num_timesteps, seed, evaluate, render):
     set_global_seeds(workerseed + rank)
 
     disable_render = not render
-    train_env = LearningEnvironment(num_particles=PARTICLES, disable_render=True)
-    eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=disable_render)
+    train_env = LearningEnvironment(num_particles=PARTICLES, physics=physics, disable_render=True)
+    eval_env = LearningEnvironment(num_particles=PARTICLES, physics=physics, disable_render=disable_render)
 
     def policy_fn(name, ob_space, ac_space):
         return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=64, rnn_hid_units=64, num_hid_layers=2)
@@ -36,14 +37,18 @@ def train(env_id, num_timesteps, seed, evaluate, render):
     #gym.logger.setLevel(logging.WARN)
 
     if evaluate:
-        pposgd_simple.run_evaluation(eval_env, policy_fn, directory='results/ppo', render=render)
+        pposgd_simple.run_evaluation(eval_env, policy_fn, directory=DIRECTORY, render=render)
     else:
         pposgd_simple.learn(train_env, eval_env, policy_fn,
+                directory=DIRECTORY,
                 max_timesteps=num_timesteps,
-                timesteps_per_batch=2048,
-                clip_param=0.2, entcoeff=0.002,
-                optim_epochs=10, optim_stepsize=2e-4, optim_batchsize=64,
-                gamma=0.995, lam=0.95, schedule='linear',
+                timesteps_per_batch=8192,
+                clip_param=0.2,
+                entcoeff=0.01,
+                optim_epochs=10,
+                optim_stepsize=1e-4,
+                optim_batchsize=64,
+                gamma=0.99, lam=0.95, schedule='linear',
                 render=render
             )
     train_env.close()
@@ -56,8 +61,9 @@ def main():
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--eval', help='Evaluate solution', type=bool, default=False)
     parser.add_argument('--render', help='Render evaluation', type=bool, default=False)
+    parser.add_argument('--physics', help='Sensor for position', type=str, default='physics')
     args = parser.parse_args()
-    train(args.env, num_timesteps=TIMESTEPS, seed=args.seed, evaluate=args.eval, render=args.render)
+    train(args.env, num_timesteps=TIMESTEPS, seed=args.seed, evaluate=args.eval, render=args.render, physics=args.physics)
 
 
 if __name__ == '__main__':

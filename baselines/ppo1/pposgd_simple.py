@@ -36,7 +36,7 @@ class Saver:
             print(e)
 
 
-def traj_segment_generator(pi, env, horizon, stochastic, catastrophy=0.5):
+def traj_segment_generator(pi, env, horizon, stochastic, catastrophy=0):
     t = 0
     ac = env.action_space.sample() # not used, just so we have the datatype
     new = True # marks if we're on first timestep of an episode
@@ -270,13 +270,16 @@ def evaluate(env, pi, render):
     stochastic = True
     done = False
     ob = env.reset(catastrophy=False)
+    reward = 0
     while not done:
         ac, vpred = pi.act(stochastic, ob)
         ob, rew, done, _ = env.step(ac)
+        reward += rew
         print('V:',vpred, 'Reward:', rew, 'A:',ac[0],ac[1])
         if render:
-            env.render()
-            env.background = get_v_background(env, pi, stochastic)
+           env.render()
+           #env.background = get_v_background(env, pi, stochastic)
+    return reward
 
 
 def run_evaluation(env, policy_func, directory, render):
@@ -286,11 +289,19 @@ def run_evaluation(env, policy_func, directory, render):
     saver = Saver()
     ob_space = env.observation_space
     ac_space = env.action_space
+    rewards = deque(maxlen=5000)
     pi = policy_func("pi", ob_space, ac_space) # Construct network for new policy
     U.initialize()
     saver.restore_model(directory) # Load weights
+
+    i = 0
     while True:
-        evaluate(env, pi, render)
+        reward = evaluate(env, pi, render)
+        rewards.append(reward)
+        mean = np.mean(rewards)
+        if i%100:
+            print("Reward so far = %.3f"%mean)
+        i += 1
 
 
 def flatten_lists(listoflists):

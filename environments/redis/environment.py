@@ -81,7 +81,7 @@ class LearningEnvironment:
     snapshots = deque(maxlen=10)
     catastrophies = deque(maxlen=1000)
 
-    def __init__(self, num_particles=2, particle_size=40, disable_render=False):
+    def __init__(self, num_particles=2, particle_size=40, physics="simulation", disable_render=False):
         """
         @history: A vector where each row is a previous state
         """
@@ -96,13 +96,13 @@ class LearningEnvironment:
         self.universe = Universe((self.screen_width, self.screen_height))
         self.universe.addFunctions(['move', 'bounce', 'collide', 'drag', 'move_adversary'])
         self.universe.mass_of_air = 0.1
+        self.physics = physics
 
         # Add all the particles
         colors = sns.color_palette("muted")
         for i in range(self.num_particles):
             name = "default"
             speed = self.particle_speed
-            backend = "simulation"
             if i==0:
                 name = "primary"
                 speed = self.particle_speed
@@ -112,6 +112,12 @@ class LearningEnvironment:
 
         # Add the primary particle
         self.primary = self.universe.particles[0]
+        self.primary.backend = self.physics
+
+        # Create the primary ghost
+        self.universe.addParticle(radius=particle_size, mass=100, speed=speed, elasticity=0.5, color=(200,200,200), target=target, name="ghost", ghost=True)
+        self.ghost = self.universe.particles[-1]
+
 
         # Reset the environment to correctly spawn the particles
         self.reset()
@@ -137,6 +143,7 @@ class LearningEnvironment:
         throttle = action[1]
         self.previous_action = action
         self.primary.control(steering, throttle)
+        self.ghost.control(steering, throttle)
 
         # Step forward one timestep
         self.universe.update()
@@ -154,13 +161,21 @@ class LearningEnvironment:
             reward = 0
             done = self.current_step >= self.max_steps
 
+        # Put the ghost back near the primary
+        if self.current_step%5==0:
+            self.reset_ghost()
+
         # Enforce acceleration limits
         excess = np.maximum(abs(action)-0.9, 0)
         reward -= np.sum(excess)
 
         # Enforce speed limits
-        if self.primary.speed > 1:
+        if abs(self.primary.speed) > 1:
             reward -= 0.02
+
+        # Softly penalize reversing
+        if self.primary.speed < 0:
+            reward -= 0.001
 
         # Enforce penalty regions
         if self.universe.isOnPenalty(self.primary):
@@ -202,7 +217,17 @@ class LearningEnvironment:
         else:
             self.record_catastrophies = True
 
+        # Reset the ghost
+        self.reset_ghost()
+
         return self.get_current_state()
+
+
+    def reset_ghost(self):
+        self.ghost.x = self.primary.x
+        self.ghost.y = self.primary.y
+        self.ghost.angle = self.primary.angle
+        self.ghost.speed = self.primary.speed
 
 
     def render(self):
@@ -242,9 +267,14 @@ class LearningEnvironment:
         self.draw_circle(int(t.x), int(t.y), t.radius, t.color, filled=False)
         self.draw_circle(int(t.x), int(t.y), int(t.radius/4), t.color, filled=True)
 
-        # Draw the primary particle direction
+        # Draw the primary particle speed
         for p in self.universe.particles:
             dx, dy = p.get_speed_vector(scale=20)
+            pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (0,0,255))
+
+        # Draw the primary particle orientation
+        for p in self.universe.particles:
+            dx, dy = p.get_direction_vector(scale=1)
             pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (0,0,0))
 
         # Draw the control vector
@@ -254,12 +284,6 @@ class LearningEnvironment:
 
         self.flip_screen()
         time.sleep(0.01)
-
-
-    def switch_backend(self,backend):
-        """Switch the primary backend"""
-        self.primary.backend = backend
-        pygame.display.set_caption('Bouncing Objects (%s)'%backend)
 
 
     def flip_screen(self):
@@ -344,7 +368,8 @@ class LearningEnvironment:
         # Get the current state vector
         state = []
         for i,particle in enumerate(self.universe.particles):
-            state.extend(particle.get_state_vector(self.screen_width, self.screen_height))
+            if not particle.ghost:
+                state.extend(particle.get_state_vector(self.screen_width, self.screen_height))
         state.extend(self.previous_action)
 
         # Append to the state buffer
@@ -381,13 +406,13 @@ class HumanLearningEnvironment(LearningEnvironment):
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_w:
-                        action = [0, 0.6]
+                        action = [0, 0.5]
                     if event.key == pygame.K_d:
-                        action = [0.3, 0.6]
+                        action = [0.9, 0.5]
                     if event.key == pygame.K_s:
-                        action = [0, -0.6]
+                        action = [0, -0.5]
                     if event.key == pygame.K_a:
-                        action = [-0.3, 0.6]
+                        action = [-0.9, 0.5]
         return np.array(action)
 
 
