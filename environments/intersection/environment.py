@@ -163,7 +163,7 @@ class LearningEnvironment:
         if self.background is not None:
             pixelcopy.array_to_surface(self.screen, self.background)
         else:
-            self.screen.fill(self.universe.colour)
+            self.screen.fill(self.universe.color)
 
         # Draw penalties
         for p in self.universe.penalties:
@@ -181,8 +181,8 @@ class LearningEnvironment:
 
         # Draw particles
         for p in self.universe.particles:
-            edge = np.maximum(p.colour, (200,200,200))
-            self.draw_circle(int(p.x), int(p.y), p.size, p.colour, edgeColor=edge, filled=True)
+            edge = np.maximum(p.color, (200,200,200))
+            self.draw_circle(int(p.x), int(p.y), p.size, p.color, edgeColor=edge, filled=True)
 
         # Draw primart target
         #for t in self.universe.targets:

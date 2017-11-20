@@ -13,8 +13,9 @@ from keras.models import Sequential
 from keras.layers import Input, LSTM, Dense
 from sklearn import preprocessing
 from skimage.draw import circle
-from .physics.utils import cart2pol
-from .physics.universe import Universe
+from .simulation.utils import cart2pol
+from .simulation.universe import Universe
+from .experiment.particles import RealObject, RealTarget
 import seaborn as sns; sns.set()
 
 
@@ -40,9 +41,16 @@ def clip(val, minimum, maximum):
     """Clip a value to [min,max]"""
     return max(min(val,maximum),minimum)
 
+
 def clipv(vector, space):
     """Clip @vector to the gym space"""
     return np.clip(vector, space.low, space.high)
+
+
+def get_color(i):
+    """Return a color from the pallete"""
+    colors = sns.color_palette("muted")
+    return tuple(255*c for c in colors[i])
 
 
 class Snapshot():
@@ -62,7 +70,7 @@ class Snapshot():
 
 
 
-class LearningEnvironment:
+class Environment:
     """
     Environment that an algorithm can play with
     """
@@ -81,7 +89,8 @@ class LearningEnvironment:
     snapshots = deque(maxlen=10)
     catastrophies = deque(maxlen=1000)
 
-    def __init__(self, num_particles=2, particle_size=40, physics="simulation", disable_render=False):
+
+    def __init__(self, primary, num_particles, particle_size, disable_render):
         """
         @history: A vector where each row is a previous state
         """
@@ -93,31 +102,29 @@ class LearningEnvironment:
         self.action_space = ActionSpace(-1, 1, self.action_dimensions)
         self.previous_action = np.zeros(self.action_space.shape)
 
+        self.primary = primary
         self.universe = Universe((self.screen_width, self.screen_height))
         self.universe.addFunctions(['move', 'bounce', 'collide', 'drag', 'move_adversary'])
         self.universe.mass_of_air = 0.1
-        self.physics = physics
 
-        # Add all the particles
-        colors = sns.color_palette("muted")
-        for i in range(self.num_particles):
+        # Create the primary
+        if primary is not None:
+            self.universe.particles.insert(0,primary)
+        else:
+            name = "primary"
+            speed = self.particle_speed
+            color = get_color(0)
+            target = self.universe.addTarget(radius=particle_size, color=color)
+            particle = self.universe.addParticle(radius=particle_size, mass=100, speed=speed, elasticity=0.5, color=color, target=target, name=name)
+        self.primary = self.universe.particles[0]
+
+        # Add all the other particles
+        for i in range(1,self.num_particles):
             name = "default"
             speed = self.particle_speed
-            if i==0:
-                name = "primary"
-                speed = self.particle_speed
-            color = tuple(255*c for c in colors[i])
-            target = self.universe.addTarget(radius=particle_size, color=(0,255,255))
+            color = get_color(i)
+            target = self.universe.addTarget(radius=particle_size, color=color)
             particle = self.universe.addParticle(radius=particle_size, mass=100, speed=speed, elasticity=0.5, color=color, target=target, name=name)
-
-        # Add the primary particle
-        self.primary = self.universe.particles[0]
-        self.primary.backend = self.physics
-
-        # Create the primary ghost
-        self.universe.addParticle(radius=particle_size, mass=100, speed=speed, elasticity=0.5, color=(200,200,200), target=target, name="ghost", ghost=True)
-        self.ghost = self.universe.particles[-1]
-
 
         # Reset the environment to correctly spawn the particles
         self.reset()
@@ -143,12 +150,16 @@ class LearningEnvironment:
         throttle = action[1]
         self.previous_action = action
         self.primary.control(steering, throttle)
-        self.ghost.control(steering, throttle)
 
         # Step forward one timestep
         self.universe.update()
+
+        # Update our primary positions
+        self.primary.update()
+        self.primary.target.update()
+
+        # Calculate the current state
         state = self.get_current_state()
-        self.snapshots.append(Snapshot(self.universe))
         self.current_step += 1
 
         if self.primary.atTarget(threshold=50) and self.primary.speed<0.4:
@@ -160,10 +171,6 @@ class LearningEnvironment:
         else:
             reward = 0
             done = self.current_step >= self.max_steps
-
-        # Put the ghost back near the primary
-        if self.current_step%5==0:
-            self.reset_ghost()
 
         # Enforce acceleration limits
         excess = np.maximum(abs(action)-0.9, 0)
@@ -179,16 +186,12 @@ class LearningEnvironment:
 
         # Enforce penalty regions
         if self.universe.isOnPenalty(self.primary):
-            reward -= 0.02
+            reward -= 0.1
 
         # Reward clipping
         self.reward_so_far += reward
         if self.reward_so_far <= -10:
             done = True
-
-        # Record this as a catastrophy
-        if self.record_catastrophies and reward <= -1:
-            self.catastrophies.extend(self.snapshots)
 
         info = {'step': self.current_step}
         return state, reward, done, info
@@ -206,28 +209,7 @@ class LearningEnvironment:
 
         self.reward_so_far = 0
 
-        self.snapshots.clear
-
-        if catastrophy and len(self.catastrophies):
-            index = random.randint(0, len(self.catastrophies)-1)
-            example = self.catastrophies[index]
-            example.modifyUniverse(self.universe)
-            self.primary = self.universe.particles[0]
-            self.record_catastrophies = False
-        else:
-            self.record_catastrophies = True
-
-        # Reset the ghost
-        self.reset_ghost()
-
         return self.get_current_state()
-
-
-    def reset_ghost(self):
-        self.ghost.x = self.primary.x
-        self.ghost.y = self.primary.y
-        self.ghost.angle = self.primary.angle
-        self.ghost.speed = self.primary.speed
 
 
     def render(self):
@@ -238,7 +220,7 @@ class LearningEnvironment:
         if self.background is not None:
             pixelcopy.array_to_surface(self.screen, self.background)
         else:
-            self.screen.fill(self.universe.colour)
+            self.screen.fill(self.universe.color)
 
         # Draw penalties
         for xi in range(self.universe.discretization):
@@ -249,20 +231,12 @@ class LearningEnvironment:
                 pygame.draw.rect(self.screen_buffer, color, rect)
         self.screen.blit(self.screen_buffer, (0,0))
 
-        # Draw Spawn
-        #for p in self.universe.spawn:
-        #    x,y,w,h = p
-        #    rect = (int(x), int(y), int(w), int(h))
-        #    color = (200,200,255)
-        #    pygame.draw.rect(self.screen, color, rect, 2)
-
         # Draw particles
         for p in self.universe.particles:
-            edge = np.maximum(p.colour, (200,200,200))
-            self.draw_circle(int(p.x), int(p.y), p.size, p.colour, edgeColor=edge, filled=True)
+            edge = np.maximum(p.color, (200,200,200))
+            self.draw_circle(int(p.x), int(p.y), p.radius, p.color, edgeColor=edge, filled=True)
 
         # Draw primary target
-        #for t in self.universe.targets:
         t = self.primary.target
         self.draw_circle(int(t.x), int(t.y), t.radius, t.color, filled=False)
         self.draw_circle(int(t.x), int(t.y), int(t.radius/4), t.color, filled=True)
@@ -278,9 +252,12 @@ class LearningEnvironment:
             pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (0,0,0))
 
         # Draw the control vector
-        p = self.primary
-        dx, dy = p.get_control_vector(scale=20)
-        pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (255,0,0))
+        try:
+            p = self.primary
+            dx, dy = p.get_control_vector(scale=20)
+            pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (255,0,0))
+        except AttributeError:
+            pass
 
         self.flip_screen()
         time.sleep(0.01)
@@ -322,43 +299,6 @@ class LearningEnvironment:
         pygame.gfxdraw.aacircle(self.screen, int(x), int(y), r, edgeColor)
 
 
-    def get_teacher_action(self):
-        """
-        Return a chase goal action
-        """
-        dx = (self.primary.target.x - self.primary.x) / self.screen_width
-        dy = (self.primary.target.y - self.primary.y) / self.screen_height
-        desired = cart2pol(-dy, dx)[0] # On domain [-pi,pi]
-        current = self.primary.angle   # On domain [0, 2*pi]
-
-        # Map current to domain [-pi,pi]
-        if current > math.pi:
-            current = current - 2*math.pi
-
-        # Calculate the angle update
-        da = desired - current
-
-        # Ideal speed. Should incur minimal penaly
-        ds = 1
-
-        # Backward left
-        if da < -math.pi / 2:
-            angle = -(da + math.pi)
-            speed = -(ds + self.primary.speed) / 4 # Aim for speed 0.5
-        # Backward right
-        elif da > math.pi / 2:
-            angle = - da + math.pi
-            speed = -(0.5 + self.primary.speed) / 4 # Aim for speed 0.5
-        # Forward
-        else:
-            angle = 2 * da # Correct angle
-            speed = (0.5 - self.primary.speed) / 4 # Aim for speed 0.5
-
-        speed = clip(speed, -0.9, 0.9)
-        angle = clip(angle, -0.9, 0.9)
-
-        return np.array([angle,speed])
-
 
     def get_current_state(self):
         """
@@ -368,8 +308,7 @@ class LearningEnvironment:
         # Get the current state vector
         state = []
         for i,particle in enumerate(self.universe.particles):
-            if not particle.ghost:
-                state.extend(particle.get_state_vector(self.screen_width, self.screen_height))
+            state.extend(particle.get_state_vector(self.screen_width, self.screen_height))
         state.extend(self.previous_action)
 
         # Append to the state buffer
@@ -385,6 +324,71 @@ class LearningEnvironment:
     def close(self):
         """Clean up the env"""
         pass
+
+
+
+class LearningEnvironment(Environment):
+    """
+    A fully simulated environment for training control algorithms
+    - The primary is simulated and randomly spawned
+    - The target is simulated and randomly spawned
+    @locus: The RL training computer
+    """
+    def __init__(self, num_particles=2, particle_size=80, *args, **kwargs):
+        super().__init__(primary, num_particles, particle_size, *args, **kwargs)
+
+
+
+class ExecuteEnvironment(Environment):
+    """
+    A real environment used to control the car
+    - The primary position is pulled from the database
+    - The primary control signal is sent to the car
+    - The target position is pulled from the database
+    @locus: The Real Car
+    """
+    def __init__(self, num_particles=2, particle_size=80, *args, **kwargs):
+        primary = RealObject(particle_size, color=get_color(0), name="Real Car")
+        primary.target = RealTarget(particle_size, color=get_color(0), name="Real Car Target")
+        super().__init__(primary, num_particles, particle_size, *args, **kwargs)
+
+    def reset(self):
+        """
+        Reset the environment, and immediately pull the new position
+        Never sends a control signal to the real objects
+        """
+        self.primary.update()
+        self.primary.target.update()
+        return self.get_current_state()
+
+
+
+class ViewingEnvironment(Environment):
+    """
+    Environment where all data is pulled from real environment
+    - The primary object is the real car
+    - The primary target is pulled from the database
+    """
+    def __init__(self, num_particles=2, particle_size=80, *args, **kwargs):
+        primary = RealObject(particle_size, color=get_color(0), name="Real Car")
+        primary.target = RealTarget(particle_size, color=get_color(0), name="Real Car Target")
+        super().__init__(primary, num_particles, particle_size, *args, **kwargs)
+
+    def step(self,action):
+        """
+        Pull the updated positions from the database
+        Never sends a control signal to the real objects
+        """
+        self.primary.update()
+        self.primary.target.update()
+
+    def reset(self):
+        """
+        Pull the updated positions from the database
+        Never sends a control signal to the real objects
+        """
+        self.primary.update()
+        self.primary.target.update()
 
 
 

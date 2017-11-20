@@ -4,19 +4,15 @@ import redis
 import numpy as np
 import math, random
 import matplotlib
-from gql import gql, Client
 from .utils import addVectors, pol2cart
-from .config import *
-from .graphql import control_car
 from .utils import normalizeAngle
 
 MAX_SPEED = 1.4 # Maximum simulation speed
-STEERING_SENSITIVITY = 0.25 # Radians I rotate at speed=1 and steering=1
-ACCELERATION_SENSITIVITY = 0.5 # The amount I speed up at full throttle
-PIXELS_PER_SPEED = 10 # The pixels travelled at speed = 1
+STEERING_SENSITIVITY = 0.4 # Radians I rotate at speed=1 and steering=1
+ACCELERATION_SENSITIVITY = 0.6 # The amount I speed up at full throttle
+PIXELS_PER_SPEED = 40 # The pixels travelled at speed = 1
 ADVERSARY_SPEED = 1.2
 
-db = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 
 def combine(p1, p2):
@@ -32,13 +28,18 @@ def combine(p1, p2):
 
 class Particle:
     """ A circular object with a velocity, size and mass """
+    collisions = 0
+    control_signal = (0,0)
+    steering_sensitivity = STEERING_SENSITIVITY
+    acceleration_sensitivity = ACCELERATION_SENSITIVITY
 
     def __init__(self, position, size, target=None, mass=1, elasticity=0.8, speed=0, backend='simulation', name="default", ghost=False):
         (x, y) = position
         self.x = x
         self.y = y
         self.size = size
-        self.colour = (0, 0, 255)
+        self.radius = int(size/2)
+        self.color = (0, 0, 255)
         self.thickness = 0
         self.angle = 0
         self.speed = speed
@@ -49,10 +50,7 @@ class Particle:
         self.noise = np.array([0,0])
         self.backend = backend
         self.name = name
-        self.collisions = 0
-        self.control_signal = (0,0)
-        self.steering_sensitivity = STEERING_SENSITIVITY
-        self.acceleration_sensitivity = ACCELERATION_SENSITIVITY
+
 
 
     def clone(self):
@@ -60,7 +58,7 @@ class Particle:
         position = (self.x, self.y)
         copy = Particle(position, size=self.size)
         copy.size = self.size
-        copy.colour = self.colour
+        copy.color = self.color
         copy.thickness = self.thickness
         copy.angle = self.angle
         copy.speed = self.speed
@@ -80,24 +78,19 @@ class Particle:
     def reset(self):
         """Reset the particul dynamics"""
         self.steering_sensitivity = max(np.random.normal(loc=STEERING_SENSITIVITY, scale=0.2*STEERING_SENSITIVITY), 0.1)
-        self.acceleration_sensitivity = max(np.random.normal(loc=ACCELERATION_SENSITIVITY, scale=0.5*ACCELERATION_SENSITIVITY), 0.1)
+        self.acceleration_sensitivity = max(np.random.normal(loc=ACCELERATION_SENSITIVITY, scale=0.2*ACCELERATION_SENSITIVITY), 0.1)
 
 
     def move(self):
         """ Update position based on speed, angle """
-        if self.backend!="redis":
-            self.x += math.sin(self.angle) * self.speed * PIXELS_PER_SPEED
-            self.y -= math.cos(self.angle) * self.speed * PIXELS_PER_SPEED
-        else:
-            position = json.loads(db.get("position"))
-            self.x = CAMERA_SCALE_X * position["x"]
-            self.y = CAMERA_SCALE_Y * position["y"]
-            #print("Rendered ANGLE (1):",self.angle)
-            #print("DB ANGLE:",position["angle"])
-            self.speed = 0
-            self.angle = normalizeAngle(position["angle"])
-            #print("Rendered ANGLE (2):",self.angle)
-            #print("Loaded redis position", self.x, self.y)
+        self.x += math.sin(self.angle) * self.speed * PIXELS_PER_SPEED
+        self.y -= math.cos(self.angle) * self.speed * PIXELS_PER_SPEED
+
+
+    def update(self):
+        """Update current position"""
+        pass
+
 
     def move_adversary(self):
         """Move randomly in a correlated manner"""
@@ -123,8 +116,6 @@ class Particle:
 
     def get_direction_vector(self, scale=1):
         """Return the speed vector in cartesion coordinates"""
-        if self.name=="primary":
-            print("AN:", self.angle)
         dx, dy = pol2cart(self.angle, scale*self.size)
         return dx, dy
 
@@ -153,24 +144,17 @@ class Particle:
 
     def control(self, steering, throttle):
         """ Change angle and speed by a given vector """
+
+        # Throttle less than 0.3 just stalls
+        if abs(throttle)<0.3:
+            throttle = 0
+
         self.angle += steering * self.speed * self.steering_sensitivity
         self.speed += throttle * self.acceleration_sensitivity
         self.control_signal = (steering,throttle)
 
         if abs(self.speed) > MAX_SPEED:
             self.speed = math.copysign(MAX_SPEED, self.speed)
-
-        if self.backend=="redis":
-            steering = -steering
-            choice = input("Execute steering: %.3f throttle %.3f?"%(steering,throttle))
-            if choice == "y":
-                control_car(rotation=steering, throttle=throttle)
-                time.sleep(0.1)
-                control_car(rotation=steering, throttle=0, reset=True)
-
-
-
-
 
 
 

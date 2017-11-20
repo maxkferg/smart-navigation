@@ -269,7 +269,7 @@ def evaluate(env, pi, render):
     """
     stochastic = True
     done = False
-    ob = env.reset(catastrophy=False)
+    ob = env.reset()
     reward = 0
     while not done:
         ac, vpred = pi.act(stochastic, ob)

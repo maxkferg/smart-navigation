@@ -19,6 +19,10 @@ class Target:
         copy = Target(position, self.radius, self.color)
         return copy
 
+    def update(self):
+        """Update current position"""
+        pass
+
     def respawn(self, screen_width, screen_height):
         """ Respawn the target """
         self.x = np.random.randint(low=self.radius, high=(screen_width-self.radius))

@@ -20,7 +20,7 @@ class Universe:
         self.particles = []
         self.springs = []
 
-        self.colour = (255,255,255)
+        self.color = (255,255,255)
         self.mass_of_air = 0.2
         self.elasticity = 0.2
 
@@ -37,14 +37,14 @@ class Universe:
 
         self.penalties = np.array([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 1, 0, 0, 1, 1, 1, 1, 0],
-            [0, 1, 1, 0, 0, 1, 1, 1, 1, 0],
-            [0, 1, 1, 0, 0, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ])
 
@@ -78,7 +78,7 @@ class Universe:
         particle = Particle((x, y), size, target=target, mass=mass, name=name, backend=backend, ghost=ghost)
         particle.speed = kargs.get('speed', random.random())
         particle.angle = kargs.get('angle', random.uniform(0, math.pi*2))
-        particle.colour = kargs.get('color', (0,0,0))
+        particle.color = kargs.get('color', (0,0,0))
         particle.elasticity = kargs.get('elasticity', self.elasticity)
         particle.drag = (particle.mass/(particle.mass + self.mass_of_air)) ** particle.size
 

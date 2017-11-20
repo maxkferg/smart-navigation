@@ -24,7 +24,7 @@ class Particle:
         self.x = x
         self.y = y
         self.size = size
-        self.colour = (0, 0, 255)
+        self.color = (0, 0, 255)
         self.thickness = 0
         self.angle = 0
         self.speed = speed
