@@ -1,6 +1,5 @@
 import math
 import random
-import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -9,11 +8,11 @@ from skimage.transform import resize
 
 
 
-def scale_image(image):
+def scale_image(image, n=800):
     """
     Scale image to 800 x 800
     """
-    n = 800
+    import cv2 as cv
     return cv.resize(image, (n, n))
 
 
@@ -21,6 +20,7 @@ def map_to_colors(pixels):
     """
     Map image from intensity to colors
     """
+    import cv2 as cv
     pixels = -pixels # Prefe colormap reversed
     minq = np.min(pixels)
     maxq = np.max(pixels)
@@ -36,6 +36,7 @@ def map_to_colors(pixels):
 
 
 def save_image_to_file(filename,pixels):
+    import cv2 as cv
     cv.imwrite(filename, pixels)
 
 
