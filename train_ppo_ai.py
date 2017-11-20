@@ -11,7 +11,6 @@ from environments.redis.environment import LearningEnvironment
 from mpi4py import MPI
 
 
-
 PARTICLES = 1
 TIMESTEPS = 6e7 #3e7
 DIRECTORY = 'results/ppo-simple'
@@ -21,7 +20,7 @@ def policy_fn(name, ob_space, ac_space):
     return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=64, rnn_hid_units=64, num_hid_layers=2)
 
 
-def train(env_id, num_timesteps, seed, evaluate, render):
+def train(env_id, num_timesteps, seed, render):
     U.make_session(num_cpu=1).__enter__()
 
     # We need to make sure the seed is different in each COMM world
@@ -30,9 +29,9 @@ def train(env_id, num_timesteps, seed, evaluate, render):
     set_global_seeds(workerseed + rank)
 
     disable_render = not render
-    env = LearningEnvironment(num_particles=PARTICLES, physics=physics, disable_render=True)
+    env = LearningEnvironment(num_particles=PARTICLES, disable_render=True)
 
-    pposgd_simple.learn(env, eval_env, policy_fn,
+    pposgd_simple.learn(env, policy_fn,
             directory=DIRECTORY,
             max_timesteps=num_timesteps,
             timesteps_per_batch=8192,

@@ -5,6 +5,8 @@ import gym
 import numpy as np
 import gym.spaces
 from baselines.common.distributions import make_pdtype
+from tensorflow.contrib.rnn import BasicRNNCell
+from tensorflow.contrib.rnn import static_rnn
 
 
 def resnet(inputs, hid_size, name):
@@ -78,10 +80,10 @@ class RnnPolicy(object):
         x = tf.unstack(obz, num=rnn_history_steps, axis=1)
 
         # 1-layer Basic Cell with n_hidden units.
-        cell = tf.nn.rnn_cell.BasicRNNCell(rnn_hid_units)
+        cell = BasicRNNCell(rnn_hid_units)
 
         # generate prediction
-        outputs, states = tf.nn.static_rnn(cell, x, dtype=tf.float32)
+        outputs, states = static_rnn(cell, x, dtype=tf.float32)
 
         # We only return the last output
         return outputs[-1]

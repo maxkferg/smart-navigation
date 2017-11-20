@@ -108,7 +108,7 @@ def add_vtarg_and_adv(seg, gamma, lam):
 
 
 
-def learn(env, eval_env, policy_func, *,
+def learn(env, policy_func, *,
         timesteps_per_batch, # timesteps per actor per update
         clip_param, entcoeff, # clipping parameter epsilon, entropy coeff
         optim_epochs, optim_stepsize, optim_batchsize,# optimization hypers
@@ -258,9 +258,9 @@ def learn(env, eval_env, policy_func, *,
         if MPI.COMM_WORLD.Get_rank()==0:
             logger.dump_tabular()
 
-        if MPI.COMM_WORLD.Get_rank()==0 and iters_so_far%5==0:
+        if MPI.COMM_WORLD.Get_rank()==0 and iters_so_far%10==0:
             saver.save_model(directory, iters_so_far)
-            evaluate(eval_env, pi, render)
+            evaluate(env, pi, render)
 
 
 def evaluate(env, pi, render):
