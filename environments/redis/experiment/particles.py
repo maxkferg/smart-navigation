@@ -34,7 +34,8 @@ class RealObject(Particle):
         """
         Update position according to database
         """
-        position = json.loads(db.get("position"))
+        data = db.get("position").decode('utf-8')
+        position = json.loads(data)
         self.x = CAMERA_SCALE_X * position["x"]
         self.y = CAMERA_SCALE_Y * position["y"]
         self.speed = position.get("speed",0)
@@ -79,7 +80,7 @@ class RealTarget(Target):
         """
         Update position according to database
         """
-        result = db.get("target")
+        result = db.get("target").decode('utf-8')
         if result is None:
             print("Unable to load target position")
         else:
