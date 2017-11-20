@@ -13,7 +13,7 @@ from mpi4py import MPI
 
 PARTICLES = 1
 TIMESTEPS = 6e7 #3e7
-DIRECTORY = 'results/ppo-simple'
+DIRECTORY = 'results/best'
 
 
 def policy_fn(name, ob_space, ac_space):

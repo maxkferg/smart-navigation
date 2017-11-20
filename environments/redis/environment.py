@@ -241,20 +241,20 @@ class Environment:
         self.draw_circle(int(t.x), int(t.y), t.radius, t.color, filled=False)
         self.draw_circle(int(t.x), int(t.y), int(t.radius/4), t.color, filled=True)
 
-        # Draw the primary particle speed
-        for p in self.universe.particles:
-            dx, dy = p.get_speed_vector(scale=20)
-            pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (0,0,255))
-
         # Draw the primary particle orientation
         for p in self.universe.particles:
             dx, dy = p.get_direction_vector(scale=1)
             pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (0,0,0))
 
+        # Draw the primary particle speed
+        for p in self.universe.particles:
+            dx, dy = p.get_speed_vector(scale=30)
+            pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (204,204,0))
+
         # Draw the control vector
         try:
             p = self.primary
-            dx, dy = p.get_control_vector(scale=20)
+            dx, dy = p.get_control_vector(scale=30)
             pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (255,0,0))
         except AttributeError:
             pass

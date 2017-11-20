@@ -116,13 +116,13 @@ class Particle:
 
     def get_direction_vector(self, scale=1):
         """Return the speed vector in cartesion coordinates"""
-        dx, dy = pol2cart(self.angle, scale*self.size)
+        dx, dy = pol2cart(self.angle, scale*self.radius)
         return dx, dy
 
 
     def get_control_vector(self, scale=1):
         """Return the control vector relative to the speed vector"""
-        desired_angle = self.angle + self.control_signal[0]
+        desired_angle = self.angle + math.copysign(self.control_signal[0],self.speed)
         desired_speed = scale * (self.control_signal[1] + self.speed)
         dx, dy = pol2cart(desired_angle, desired_speed)
         return dx, dy

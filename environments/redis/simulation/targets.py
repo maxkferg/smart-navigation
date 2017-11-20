@@ -7,16 +7,17 @@ import matplotlib
 class Target:
     """ A circular object with a size"""
 
-    def __init__(self, position, radius, color):
+    def __init__(self, position, size, color, name="target"):
         (x, y) = position
         self.x = x
         self.y = y
-        self.radius = radius
+        self.radius = int(size/2)
         self.color = color
+        self.name = name
 
     def clone(self):
         position = (self.x, self.y)
-        copy = Target(position, self.radius, self.color)
+        copy = Target(position, self.size, self.color)
         return copy
 
     def update(self):
