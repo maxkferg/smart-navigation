@@ -335,7 +335,7 @@ class LearningEnvironment(Environment):
     @locus: The RL training computer
     """
     def __init__(self, num_particles=2, particle_size=80, *args, **kwargs):
-        super().__init__(primary, num_particles, particle_size, *args, **kwargs)
+        super().__init__(None, num_particles, particle_size, *args, **kwargs)
 
 
 
