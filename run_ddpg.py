@@ -22,7 +22,7 @@ PARTICLES = 1
 RENDER = True
 
 
-def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
+def run(env_id, seed, noise_type, layer_norm, evaluation, render, **kwargs):
     disabled = True
 
     # Configure things.
@@ -30,12 +30,12 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
     if rank != 0: logger.set_level(logger.DISABLED)
 
     # Create envs.
-    env = LearningEnvironment(num_particles=PARTICLES, disable_render=False)
+    env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
 
     #gym.logger.setLevel(logging.WARN)
 
     if evaluation and rank==0:
-        eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=False)
+        eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
         #eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), 'gym_eval'))
         #env = bench.Monitor(env, None)
     else:
