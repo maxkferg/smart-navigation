@@ -38,9 +38,9 @@ def train(env_id, num_timesteps, seed, render):
             max_timesteps=num_timesteps,
             timesteps_per_batch=2048,
             clip_param=0.2,
-            entcoeff=0.02,
+            entcoeff=0.01,
             optim_epochs=10,
-            optim_stepsize=1e-3,
+            optim_stepsize=2e-4,
             optim_batchsize=64,
             gamma=0.99, lam=0.95, schedule='linear',
             render=render
