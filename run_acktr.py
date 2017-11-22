@@ -40,7 +40,7 @@ def train(env_id, num_timesteps, seed, render):
     env = AcktrEnv(num_particles=PARTICLES, disable_render=not render)
     #if logger.get_dir():
     #    env = bench.Monitor(env, os.path.join(logger.get_dir(), "monitor.json"))
-    set_global_seeds(seed)
+    #set_global_seeds(seed)
     #env.seed(seed)
     #gym.logger.setLevel(logging.WARN)
 

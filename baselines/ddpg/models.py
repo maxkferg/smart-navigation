@@ -53,10 +53,10 @@ class Actor(Model):
                 scope.reuse_variables()
 
             # RNN
-            x = self.construct_rnn(obs, rnn_history_steps=4, rnn_hid_units=64, rnn_num_layers=1, reuse=reuse, name=self.name)
+            xo = self.construct_rnn(obs, rnn_history_steps=4, rnn_hid_units=64, rnn_num_layers=1, reuse=reuse, name=self.name)
 
             # Layer 1
-            x = tf.layers.dense(x, 128)
+            x = tf.layers.dense(xo, 64)
             if self.layer_norm:
                 x = tc.layers.layer_norm(x, center=True, scale=True)
             x = tf.nn.relu(x)
@@ -66,6 +66,7 @@ class Actor(Model):
             if self.layer_norm:
                 x = tc.layers.layer_norm(x, center=True, scale=True)
             x = tf.nn.relu(x)
+            x = x+xo
 
             # Output layer
             x = tf.layers.dense(x, self.nb_actions, kernel_initializer=tf.random_uniform_initializer(minval=-3e-3, maxval=3e-3))
@@ -85,10 +86,10 @@ class Critic(Model):
                 scope.reuse_variables()
 
             # RNN
-            x = self.construct_rnn(obs, rnn_history_steps=4, rnn_hid_units=64, rnn_num_layers=1, reuse=reuse, name=self.name)
+            xo = self.construct_rnn(obs, rnn_history_steps=4, rnn_hid_units=64, rnn_num_layers=1, reuse=reuse, name=self.name)
 
             # Layer 1
-            x = tf.layers.dense(x, 128)
+            x = tf.layers.dense(xo, 64)
             if self.layer_norm:
                 x = tc.layers.layer_norm(x, center=True, scale=True)
             x = tf.nn.relu(x)
@@ -99,6 +100,7 @@ class Critic(Model):
             if self.layer_norm:
                 x = tc.layers.layer_norm(x, center=True, scale=True)
             x = tf.nn.relu(x)
+            x = x+xo
 
             # Output layer
             x = tf.layers.dense(x, 1, kernel_initializer=tf.random_uniform_initializer(minval=-3e-3, maxval=3e-3))
