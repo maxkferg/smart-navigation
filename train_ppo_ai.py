@@ -12,8 +12,8 @@ from mpi4py import MPI
 
 
 PARTICLES = 1
-TIMESTEPS = 6e7 #3e7
-DIRECTORY = 'results/best'
+TIMESTEPS = 1e7 #3e7
+DIRECTORY = 'results/ppo'
 
 
 def policy_fn(name, ob_space, ac_space):
@@ -26,19 +26,18 @@ def train(env_id, num_timesteps, seed, render):
     # We need to make sure the seed is different in each COMM world
     rank = MPI.COMM_WORLD.Get_rank()
     workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
-    set_global_seeds(workerseed + rank)
+    set_global_seeds(workerseed)
 
-    disable_render = not render
-    env = LearningEnvironment(num_particles=PARTICLES, disable_render=True)
+    env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
 
     pposgd_simple.learn(env, policy_fn,
             directory=DIRECTORY,
             max_timesteps=num_timesteps,
-            timesteps_per_batch=8192,
+            timesteps_per_batch=2048,
             clip_param=0.2,
             entcoeff=0.02,
             optim_epochs=10,
-            optim_stepsize=1e-4,
+            optim_stepsize=1e-3,
             optim_batchsize=64,
             gamma=0.99, lam=0.95, schedule='linear',
             render=render

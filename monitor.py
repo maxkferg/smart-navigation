@@ -7,16 +7,21 @@ Pulls object positions from Redis
 import os
 import sys
 import time
+import random
 import argparse
 from environments.redis.environment import ViewingEnvironment
+
+MIN_TARGET = 200
+MAX_TARGET = 600
+
 
 
 def monitor():
     env = ViewingEnvironment(disable_render=False)
 
     print("Moving target")
-    env.primary.target.x = 400
-    env.primary.target.y = 400
+    env.primary.target.x = 600
+    env.primary.target.y = 200
     env.primary.target.save()
 
     while True:
@@ -24,6 +29,11 @@ def monitor():
         env.render()
         time.sleep(0.1)
         print(".", end="", flush=True)
+        if env.primary.atTarget(threshold=50):
+            print("\n--------------------- DONE -------------------\n")
+            env.primary.target.x = random.randint(MIN_TARGET, MAX_TARGET)
+            env.primary.target.y = random.randint(MIN_TARGET, MAX_TARGET)
+            env.primary.target.save()
 
 def main():
     import argparse

@@ -18,7 +18,7 @@ import gym
 import tensorflow as tf
 from mpi4py import MPI
 
-PARTICLES = 2
+PARTICLES = 1
 RENDER = True
 
 
@@ -30,10 +30,7 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
     if rank != 0: logger.set_level(logger.DISABLED)
 
     # Create envs.
-    #env = gym.make(env_id)
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=False)
-
-#    env = bench.Monitor(env, logger.get_dir() and os.path.join(logger.get_dir(), "%i.monitor.json"%rank))
 
     #gym.logger.setLevel(logging.WARN)
 

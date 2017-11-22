@@ -19,12 +19,22 @@ from .experiment.particles import RealObject, RealTarget
 import seaborn as sns; sns.set()
 
 
-class ObservationSpace(gym.spaces.Box):
+class Space(gym.spaces.Box):
+    """A space with limits"""
+    def __init__(self, low, high, shape=None):
+        super().__init__(low, high, shape)
+        self.n = np.prod(shape)
+
+class ObservationSpace(Space):
     pass
 
 
-class ActionSpace(gym.spaces.Box):
+class ActionSpace(Space):
     pass
+
+
+class Spec:
+    timestep_limit = 100
 
 
 def ttl_color(ttl):
@@ -81,6 +91,7 @@ class Environment:
     max_steps = 100
     record_catastrophies = True
 
+    spec = Spec()
     screen = None
     particle_speed = 20
     screen_width = 800

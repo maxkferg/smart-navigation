@@ -8,7 +8,8 @@ class RunningStat(object):
         self._S = np.zeros(shape)
     def push(self, x):
         x = np.asarray(x)
-        assert x.shape == self._M.shape
+        if x.shape != self._M.shape:
+            raise ValueError("Expected shape: {0}. Got shape {1}".format(self._M.shape, x.shape))
         self._n += 1
         if self._n == 1:
             self._M[...] = x

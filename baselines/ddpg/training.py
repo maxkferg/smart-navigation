@@ -20,7 +20,7 @@ def train(env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, render, pa
     teacher, tau=0.01, eval_env=True, param_noise_adaption_interval=50):
     rank = MPI.COMM_WORLD.Get_rank()
     t = datetime.now().strftime('%H-%M')
-    PATH = 'results/checkpoints'.format(t)
+    PATH = 'results/ddpg'.format(t)
 
     #assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space
@@ -76,18 +76,14 @@ def train(env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, render, pa
                 # Perform rollouts.
                 for t_rollout in range(nb_rollout_steps):
                     # Predict next action.
-                    if random.random() < teacher:
-                        action = env.get_teacher_action()
-                        _, q = agent.pi(obs, compute_Q=True) # Good enough for stats
-                    else:
-                        action, q = agent.pi(obs, apply_noise=True, compute_Q=True)
+                    action, q = agent.pi(obs, apply_noise=True, compute_Q=True)
                     assert action.shape == env.action_space.shape
 
                     # Execute next action.
                     if rank == 0 and render:
                         env.render()
                     assert max_action.shape == action.shape
-                    new_obs, r, done, info = env.step(action, 1)  # scale for execution in env (as far as DDPG is concerned, every action is in [-1, 1])
+                    new_obs, r, done, info = env.step(action)  # scale for execution in env (as far as DDPG is concerned, every action is in [-1, 1])
                     t += 1
                     if rank == 0 and render:
                         env.render()
