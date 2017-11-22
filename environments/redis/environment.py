@@ -36,6 +36,9 @@ class ActionSpace(Space):
 class Spec:
     timestep_limit = 100
 
+class Metadata:
+    pass
+
 
 def ttl_color(ttl):
     """Return a color based on the ttl"""
@@ -92,6 +95,7 @@ class Environment:
     record_catastrophies = True
 
     spec = Spec()
+    metadata = Metadata()
     screen = None
     particle_speed = 20
     screen_width = 800

@@ -34,11 +34,11 @@ from environments.redis.environment import LearningEnvironment
 
 tf.flags.DEFINE_string("model_dir", "./model/", "Directory to write Tensorboard summaries and videos to.")
 tf.flags.DEFINE_string("env", "InvertedPendulum-v1", "Name of gym Mujoco environment, e.g. InvertedPendulum-v1")
-tf.flags.DEFINE_integer("k_steps", 50, "Number of k-step returns.")
-tf.flags.DEFINE_integer("max_episode_len", 500, "Maximum episode length.")
+tf.flags.DEFINE_integer("k_steps", 10, "Number of k-step returns.")
+tf.flags.DEFINE_integer("max_episode_len", 100, "Maximum episode length.")
 tf.flags.DEFINE_integer("eval_every_sec", 60, "Evaluate the policy every N seconds")
-tf.flags.DEFINE_boolean("reset", True, "If set, delete the existing model directory and start training from scratch.")
-tf.flags.DEFINE_integer("feature_layer_size", 200, "Num of units in the hidden layer for feature processing")
+tf.flags.DEFINE_boolean("reset", False, "If set, delete the existing model directory and start training from scratch.")
+tf.flags.DEFINE_integer("feature_layer_size", 100, "Num of units in the hidden layer for feature processing")
 tf.flags.DEFINE_integer("num_agents", 8, "Number of threads to run. ")
 tf.flags.DEFINE_float("co_var", 0.3, "Diagonal covariance for the multi variate normal policy.")
 tf.flags.DEFINE_float("delta", 1.0, "Delta as defined in ACER for TRPO.")
@@ -132,8 +132,6 @@ with tf.device("/cpu:0"):
 
     # Keeps track of the number of updates we've performed
     global_step = tf.Variable(0, name="global_step", trainable=False)
-
-
     global_actor_net = PolicyNet(HIDDEN_LAYER, ACTION_DIM, name="global_actor")
     global_critic_net = AdvantageValueNet(HIDDEN_LAYER, name="global_critic")
     # connecting stuff
@@ -207,8 +205,8 @@ with tf.Session() as sess:
         agent_threads.append(t)
 
     # Start a thread for policy eval task
-    #monitor_thread = threading.Thread(target=lambda: policy_monitor_agent.evaluate_policy(sess,EVAL_EVERY_SEC, coord))
-    #monitor_thread.start()
+    monitor_thread = threading.Thread(target=lambda: policy_monitor_agent.evaluate_policy(sess,EVAL_EVERY_SEC, coord))
+    monitor_thread.start()
 
 
     coord.join(agent_threads)

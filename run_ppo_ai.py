@@ -15,6 +15,9 @@ PARTICLES = 1
 TIMESTEPS = 1e7 #3e7
 DIRECTORY = 'results/ppo'
 
+# Disable the GPU
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
 
 def policy_fn(name, ob_space, ac_space):
     return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=64, rnn_hid_units=64, num_hid_layers=2)
