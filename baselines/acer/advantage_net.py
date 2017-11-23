@@ -41,15 +41,18 @@ class AdvantageValueNet(snt.AbstractModule):
         u: input form policy network, returns a distribution
         n: no of samples
         """
-        input_layer = RNN(hidden_size=64, output_size=64, name="value_rnn")
-        feature_layer = snt.Linear(self._hidden_size, name="x_feature_layer")
+        #input_layer = RNN(hidden_size=64, output_size=28, name="value_rnn")
+        feature_layer1 = snt.Linear(self._hidden_size, name="x_feature_layer1")
+        feature_layer2 = snt.Linear(self._hidden_size, name="x_feature_layer2")
         val_layer = snt.Linear(self._val_layer_size, name="val_layer")
         adv_layer = snt.Linear(self._adv_layer_size, name="adv_layer")
         
-        inputs = input_layer(x_t)
+        inputs = x_t#input_layer(x_t)
+        inputs = tf.reshape(inputs, [-1,28])
 
         # get the shared feature / can be removed and taken directly as input 
-        phi_x = tf.nn.relu(feature_layer(inputs))
+        phi_x = tf.nn.relu(feature_layer1(inputs))
+        phi_x = tf.nn.relu(feature_layer2(phi_x))
         
         # value function estimate
         V_x = val_layer(phi_x)

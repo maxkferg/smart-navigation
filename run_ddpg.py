@@ -18,7 +18,7 @@ import gym
 import tensorflow as tf
 from mpi4py import MPI
 
-PARTICLES = 1
+PARTICLES = 2
 RENDER = True
 
 

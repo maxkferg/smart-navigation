@@ -37,14 +37,14 @@ class Universe:
 
         self.penalties = np.array([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ])
 
@@ -150,26 +150,26 @@ class Universe:
     def bounce(self, particle):
         """ Tests whether a particle has hit the boundary of the environment """
 
-        if particle.x > self.width - particle.size:
-            particle.x = 2*(self.width - particle.size) - particle.x
+        if particle.x > self.width - particle.radius:
+            particle.x = 2*(self.width - particle.radius) - particle.x
             particle.angle = - particle.angle
             particle.speed *= self.elasticity
             particle.collisions += 1
 
-        elif particle.x < particle.size:
-            particle.x = 2*particle.size - particle.x
+        elif particle.x < particle.radius:
+            particle.x = 2*particle.radius - particle.x
             particle.angle = - particle.angle
             particle.speed *= self.elasticity
             particle.collisions += 1
 
-        if particle.y > self.height - particle.size:
-            particle.y = 2*(self.height - particle.size) - particle.y
+        if particle.y > self.height - particle.radius:
+            particle.y = 2*(self.height - particle.radius) - particle.y
             particle.angle = math.pi - particle.angle
             particle.speed *= self.elasticity
             particle.collisions += 1
 
-        elif particle.y < particle.size:
-            particle.y = 2*particle.size - particle.y
+        elif particle.y < particle.radius:
+            particle.y = 2*particle.radius - particle.y
             particle.angle = math.pi - particle.angle
             particle.speed *= self.elasticity
             particle.collisions += 1
@@ -186,7 +186,7 @@ class Universe:
         dy = p1.y - p2.y
 
         dist = math.hypot(dx, dy)
-        if dist < p1.size + p2.size:
+        if dist < p1.radius + p2.radius:
             angle = math.atan2(dy, dx) + 0.5 * math.pi
             total_mass = p1.mass + p2.mass
 
@@ -196,7 +196,7 @@ class Universe:
             p1.speed *= elasticity
             p2.speed *= elasticity
 
-            overlap = 0.5*(p1.size + p2.size - dist+1)
+            overlap = 0.5*(p1.radius + p2.radius - dist+1)
             p1.x += math.sin(angle)*overlap
             p1.y -= math.cos(angle)*overlap
             p2.x -= math.sin(angle)*overlap
@@ -219,6 +219,6 @@ class Universe:
         """ Returns any particle that occupies position x, y """
 
         for particle in self.particles:
-            if math.hypot(particle.x - x, particle.y - y) <= particle.size:
+            if math.hypot(particle.x - x, particle.y - y) <= particle.radius:
                 return particle
         return None

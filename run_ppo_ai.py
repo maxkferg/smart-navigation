@@ -11,8 +11,8 @@ from environments.redis.environment import LearningEnvironment
 from mpi4py import MPI
 
 
-PARTICLES = 1
-TIMESTEPS = 1e7 #3e7
+PARTICLES = 2
+TIMESTEPS = 5e7 #3e7
 DIRECTORY = 'results/ppo'
 
 # Disable the GPU

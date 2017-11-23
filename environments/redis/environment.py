@@ -37,7 +37,10 @@ class Spec:
     timestep_limit = 100
 
 class Metadata:
-    pass
+    def copy(self):
+        return self
+    def update(self,metadata):
+        pass
 
 
 def ttl_color(ttl):
@@ -193,7 +196,7 @@ class Environment:
 
         # Enforce speed limits
         if abs(self.primary.speed) > 1:
-            reward -= 0.02
+            reward -= 0.01
 
         # Softly penalize reversing
         if self.primary.speed < 0:
@@ -201,11 +204,11 @@ class Environment:
 
         # Enforce penalty regions
         if self.universe.isOnPenalty(self.primary):
-            reward -= 0.1
+            reward -= 0.01
 
         # Reward clipping
         self.reward_so_far += reward
-        if self.reward_so_far <= -10:
+        if self.reward_so_far <= -2:
             done = True
 
         info = {'step': self.current_step}
@@ -327,8 +330,9 @@ class Environment:
         state.extend(self.previous_action)
 
         # Append to the state buffer
+        # Most recent state is last
         while len(self.state_buffer) <= self.state_history:
-            self.state_buffer.insert(0,state)
+            self.state_buffer.append(state)
         self.state_buffer.pop()
 
         # Convert to numpy array (self.state_history, self.state_size)

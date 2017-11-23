@@ -34,12 +34,14 @@ class PolicyNet(snt.AbstractModule):
     def _build(self, inputs):
         """Compute output Tensor from input Tensor."""
 
-        layer_0 = RNN(hidden_size=64, output_size=64, name="policy_rnn")
+        #layer_0 = RNN(hidden_size=64, output_size=64, name="policy_rnn")
         layer_1 = snt.Linear(self._hidden_size, name="layer_1")
-        layer_2 = snt.Linear(self._output_size, name="layer_2")
+        layer_2 = snt.Linear(self._hidden_size, name="layer_1")
+        layer_3 = snt.Linear(self._output_size, name="layer_2")
 
-        mlp = snt.Sequential([layer_0, layer_1,  tf.nn.relu , layer_2])
+        mlp = snt.Sequential([layer_1,  tf.nn.relu , layer_2, tf.nn.relu , layer_3, tf.nn.tanh])
 
+        inputs = tf.reshape(inputs, [-1,28])
         mu = mlp(inputs)
 
         # dist = tf.contrib.distributions.Normal(loc=mu, scale = tf.ones_like(mu) * self._co_var)
@@ -48,35 +50,35 @@ class PolicyNet(snt.AbstractModule):
         # mu : MB x ACTION_DIM
         # dist: MB x ACTION_DIM
         return mu, dist
-    
+
     def update_local_params_op(self, target_name):
         """
         to copy the ops within a net
-        
+
         returns the copy op
         """
         t_vars = tf.trainable_variables()
-        
+
         local_vars = [var for var in t_vars if self._name in var.name]
         target_vars = [var for var in t_vars if target_name in var.name]
-        
+
         copy_op = []
-        
+
         for l_var,t_var in zip(local_vars,target_vars):
             copy_op.append(l_var.assign(t_var))
 
         return copy_op
-    
+
     def local_params(self):
         """
         return the local params
         """
         t_vars = tf.trainable_variables()
-        
+
         local_vars = [var for var in t_vars if self._name in var.name]
-        
+
         return local_vars
-    
+
     def soft_update_from_target_params(self, from_target_name, tau):
         """
         returns the op for soft updating the local params from target params 
@@ -84,16 +86,16 @@ class PolicyNet(snt.AbstractModule):
         # this call should be only of average net
         """
         t_vars = tf.trainable_variables()
-        
+
         local_vars = [var for var in t_vars if self._name in var.name]
         target_vars = [var for var in t_vars if from_target_name in var.name]
-        
+
         soft_update_op = []
-        
+
         for l_var,t_var in zip(local_vars,target_vars):
             soft_update_op.append(l_var.assign(tf.multiply(l_var, tau) + tf.multiply(t_var, (1. - tau))))
-            
+
         return soft_update_op
-        
+
 
 

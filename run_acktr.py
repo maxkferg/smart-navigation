@@ -12,7 +12,7 @@ from baselines.acktr.policies import GaussianMlpPolicy
 from baselines.acktr.value_functions import NeuralNetValueFunction
 from environments.redis.environment import LearningEnvironment, ObservationSpace
 
-PARTICLES = 1
+PARTICLES = 2
 
 class AcktrEnv(LearningEnvironment):
     """
@@ -66,4 +66,4 @@ if __name__ == "__main__":
     parser.add_argument('--env', help='environment ID', type=str, default="Reacher-v1")
     parser.add_argument('--render', help='Choose whether to render', type=bool, default=False)
     args = parser.parse_args()
-    train(args.env, num_timesteps=1e6, seed=args.seed, render=args.render)
+    train(args.env, num_timesteps=5e7, seed=args.seed, render=args.render)

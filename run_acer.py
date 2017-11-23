@@ -32,28 +32,28 @@ from environments.redis.environment import LearningEnvironment
 
 
 
-tf.flags.DEFINE_string("model_dir", "./model/", "Directory to write Tensorboard summaries and videos to.")
+tf.flags.DEFINE_string("model_dir", "./results/acer/model/", "Directory to write Tensorboard summaries and videos to.")
 tf.flags.DEFINE_string("env", "InvertedPendulum-v1", "Name of gym Mujoco environment, e.g. InvertedPendulum-v1")
-tf.flags.DEFINE_integer("k_steps", 10, "Number of k-step returns.")
+tf.flags.DEFINE_integer("k_steps", 1, "Number of k-step returns.")
 tf.flags.DEFINE_integer("max_episode_len", 100, "Maximum episode length.")
-tf.flags.DEFINE_integer("eval_every_sec", 60, "Evaluate the policy every N seconds")
-tf.flags.DEFINE_boolean("reset", False, "If set, delete the existing model directory and start training from scratch.")
-tf.flags.DEFINE_integer("feature_layer_size", 100, "Num of units in the hidden layer for feature processing")
-tf.flags.DEFINE_integer("num_agents", 8, "Number of threads to run. ")
-tf.flags.DEFINE_float("co_var", 0.3, "Diagonal covariance for the multi variate normal policy.")
+tf.flags.DEFINE_integer("eval_every_sec", 30, "Evaluate the policy every N seconds")
+tf.flags.DEFINE_boolean("reset", True, "If set, delete the existing model directory and start training from scratch.")
+tf.flags.DEFINE_integer("feature_layer_size", 128, "Num of units in the hidden layer for feature processing")
+tf.flags.DEFINE_integer("num_agents", 16, "Number of threads to run. ")
+tf.flags.DEFINE_float("co_var", 0.1, "Diagonal covariance for the multi variate normal policy.")
 tf.flags.DEFINE_float("delta", 1.0, "Delta as defined in ACER for TRPO.")
-tf.flags.DEFINE_float("lr", 1e-4, "Learning rate for the shared optimzer")
-tf.flags.DEFINE_float("c", 5.0, "Importance sampling truncated ratio")
+tf.flags.DEFINE_float("lr", 1e-5, "Learning rate for the shared optimzer")
+tf.flags.DEFINE_float("c", 2.0, "Importance sampling truncated ratio")
 tf.flags.DEFINE_float("gamma", 0.99, "Discount factor")
-tf.flags.DEFINE_float("tau", 0.995, "Soft update rule for average network params")
-tf.flags.DEFINE_integer("pure_exploration_steps", 0, "Number of pure random policy steps to take  ")
+tf.flags.DEFINE_float("tau", 0.999, "Soft update rule for average network params")
+tf.flags.DEFINE_integer("pure_exploration_steps", 1, "Number of pure random policy steps to take  ")
 tf.flags.DEFINE_integer("current_policy_steps", 4, "Number of current policy steps to take  ")
 tf.flags.DEFINE_integer("update_steps", 1, "Number of off policy updates to perform per epoch  ")
-tf.flags.DEFINE_boolean("render", False, "Should we render")
+tf.flags.DEFINE_boolean("render", True, "Should we render")
 
 
 FLAGS = tf.flags.FLAGS
-PARTICLES = 1
+PARTICLES = 2
 
 
 import gym
@@ -128,62 +128,63 @@ summary_writer = tf.summary.FileWriter(os.path.join(MODEL_DIR, "train"))
 
 
 # to run stuff on cpu
-with tf.device("/cpu:0"):
+# with tf.device("/cpu:0"):
 
-    # Keeps track of the number of updates we've performed
-    global_step = tf.Variable(0, name="global_step", trainable=False)
-    global_actor_net = PolicyNet(HIDDEN_LAYER, ACTION_DIM, name="global_actor")
-    global_critic_net = AdvantageValueNet(HIDDEN_LAYER, name="global_critic")
-    # connecting stuff
-    shape = tuple([BATCH_SIZE]+list(INPUT_DIM))
-    tmp_x = tf.placeholder(dtype=tf.float32, shape = shape, name ="tmp_x")
-    tmp_a = tf.placeholder(dtype=tf.float32, shape = (BATCH_SIZE, ACTION_DIM), name ="tmp_a")
+# Keeps track of the number of updates we've performed
+global_step = tf.Variable(0, name="global_step", trainable=False)
+global_actor_net = PolicyNet(HIDDEN_LAYER, ACTION_DIM, name="global_actor")
+global_critic_net = AdvantageValueNet(HIDDEN_LAYER, name="global_critic")
+# connecting stuff
+shape = tuple([BATCH_SIZE]+list(INPUT_DIM))
+tmp_x = tf.placeholder(dtype=tf.float32, shape = shape, name ="tmp_x")
+tmp_a = tf.placeholder(dtype=tf.float32, shape = (BATCH_SIZE, ACTION_DIM), name ="tmp_a")
 
-    global_average_actor_net = PolicyNet(HIDDEN_LAYER, ACTION_DIM, name="global_Average_actor")
+global_average_actor_net = PolicyNet(HIDDEN_LAYER, ACTION_DIM, name="global_Average_actor")
 
-    _, tmp_policy = global_actor_net(tmp_x)
-    _ = global_critic_net(tmp_x, tmp_a,  tmp_policy)
-    _ = global_average_actor_net(tmp_x)
+_, tmp_policy = global_actor_net(tmp_x)
+_ = global_critic_net(tmp_x, tmp_a,  tmp_policy)
+_ = global_average_actor_net(tmp_x)
 
-    # optimzer with learning rate, alternate set it to None so each agent can create it own optimse
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=LEARNING_RATE)
+# optimzer with learning rate, alternate set it to None so each agent can create it own optimse
+optimizer = tf.train.RMSPropOptimizer(learning_rate=LEARNING_RATE)
 
 
-    # Global step iterator
-    global_counter = itertools.count()
+# Global step iterator
+global_counter = itertools.count()
 
-    num_agents = NUM_AGENTS # Set workers ot number of available CPU threads/ multiprocessing.cpu_count()
-    agents = []
-    # Create workers
-    for i in range(num_agents):
-        # We only write summaries in one of the workers because they're
-        # pretty much identical and writing them on all workers
-        # would be a waste of space
-        agent_summary_writer = None
-        if i == 0:
-            agent_summary_writer = summary_writer
+num_agents = NUM_AGENTS # Set workers ot number of available CPU threads/ multiprocessing.cpu_count()
+agents = []
+# Create workers
+for i in range(num_agents):
+    # We only write summaries in one of the workers because they're
+    # pretty much identical and writing them on all workers
+    # would be a waste of space
+    agent_summary_writer = None
+    if i == 0:
+        agent_summary_writer = summary_writer
 
-        agents.append(Agent(name=str(i),
-                            environment=make_env(render=RENDER),
-                            global_counter=global_counter,
-                            average_actor_net=global_average_actor_net,
-                            optimizer=optimizer,
-                            summary_writer = agent_summary_writer,
-                            co_var=CO_VAR,
-                            flags = FLAGS))
+    print("Creating agent %i"%i)
+    agents.append(Agent(name=str(i),
+                        environment=make_env(render=RENDER),
+                        global_counter=global_counter,
+                        average_actor_net=global_average_actor_net,
+                        optimizer=optimizer,
+                        summary_writer = agent_summary_writer,
+                        co_var=CO_VAR,
+                        flags = FLAGS))
 
-    saver = tf.train.Saver(keep_checkpoint_every_n_hours=2.0, max_to_keep=10)
+saver = tf.train.Saver(keep_checkpoint_every_n_hours=2.0, max_to_keep=10)
 
-    # separate agent for keeping track of the videos as well as plotting to tensorboard
-    policy_monitor_agent = Agent(name= "policy_monitor",
-                            environment= make_env(render=RENDER), 
-                            global_counter= itertools.count(), # empty counter 
-                            average_actor_net= global_average_actor_net, 
-                            optimizer= None,  # doesn't matter
-                            co_var= CO_VAR, 
-                            summary_writer = summary_writer,
-                            saver = saver,
-                            flags = FLAGS)
+# separate agent for keeping track of the videos as well as plotting to tensorboard
+policy_monitor_agent = Agent(name= "policy_monitor",
+                        environment= make_env(render=RENDER),
+                        global_counter= itertools.count(), # empty counter
+                        average_actor_net= global_average_actor_net,
+                        optimizer= None,  # doesn't matter
+                        co_var= CO_VAR,
+                        summary_writer = summary_writer,
+                        saver = saver,
+                        flags = FLAGS)
 
 #with tf.train.MonitoredSession() as sess:
 with tf.Session() as sess:
@@ -195,10 +196,10 @@ with tf.Session() as sess:
         print("Loading model checkpoint: {}".format(latest_checkpoint))
         saver.restore(sess, latest_checkpoint)
 
-
     # Run the agents
     agent_threads = []
     for agent in agents:
+        print("Starting agent %s"%agent)
         agent_run = lambda: agent.run(sess, coord)
         t = threading.Thread(target=(agent_run))
         t.start()

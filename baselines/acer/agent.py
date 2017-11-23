@@ -478,7 +478,7 @@ class Agent():
             pass
         
         self.env._max_episode_steps = self.FLAGS.max_episode_len
-        self.env = Monitor(self.env, directory=self.video_dir, video_callable=lambda x: True, resume=True)
+        #self.env = Monitor(self.env, directory=self.video_dir, video_callable=lambda x: True, resume=True)
         
         with sess.as_default(), sess.graph.as_default():  
             # run stuff here

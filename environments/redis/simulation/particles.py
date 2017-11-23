@@ -11,7 +11,7 @@ MAX_SPEED = 1.4 # Maximum simulation speed
 STEERING_SENSITIVITY = 0.4 # Radians I rotate at speed=1 and steering=1
 ACCELERATION_SENSITIVITY = 0.6 # The amount I speed up at full throttle
 PIXELS_PER_SPEED = 40 # The pixels travelled at speed = 1
-ADVERSARY_SPEED = 1.2
+ADVERSARY_SPEED = 0.3
 
 
 
@@ -77,8 +77,8 @@ class Particle:
 
     def reset(self):
         """Reset the particul dynamics"""
-        self.steering_sensitivity = max(np.random.normal(loc=STEERING_SENSITIVITY, scale=0.2*STEERING_SENSITIVITY), 0.1)
-        self.acceleration_sensitivity = max(np.random.normal(loc=ACCELERATION_SENSITIVITY, scale=0.2*ACCELERATION_SENSITIVITY), 0.1)
+        self.steering_sensitivity = max(np.random.normal(loc=STEERING_SENSITIVITY, scale=0.1*STEERING_SENSITIVITY), 0.1)
+        self.acceleration_sensitivity = max(np.random.normal(loc=ACCELERATION_SENSITIVITY, scale=0.1*ACCELERATION_SENSITIVITY), 0.1)
 
 
     def move(self):
