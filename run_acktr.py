@@ -56,7 +56,7 @@ def train(env_id, num_timesteps, seed, render):
             gamma=0.99, lam=0.97, timesteps_per_batch=8000,
             desired_kl=0.0002,
             num_timesteps=num_timesteps,
-            animate=True)
+            animate=False)
 
         env.close()
 
