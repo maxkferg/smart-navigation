@@ -18,8 +18,8 @@ class AdvantageValueNet(snt.AbstractModule):
     """
     def __init__(self, 
                  hidden_size,
-                 val_layer_size = 64,
-                 adv_layer_size = 64,
+                 val_layer_size = 1,
+                 adv_layer_size = 1,
                  n = 5,
                  name="adv_val_net"):
         """

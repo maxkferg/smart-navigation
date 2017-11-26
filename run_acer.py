@@ -12,7 +12,7 @@ import shutil
 
 
 # reset stuff
-tf.reset_default_graph()
+tf.reset_default_graph() 
 
 import gym
 import time
@@ -71,7 +71,7 @@ def make_env(render):
     """
     global count
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-    env = StackedEnvWrapper(env, num_state_history=4)
+    env = StackedEnvWrapper(env, state_history_len=4)
     env = bench.Monitor(env, os.path.join(logger.get_dir(), 'monitor-%i.json'%count))
     count += 1
     return env

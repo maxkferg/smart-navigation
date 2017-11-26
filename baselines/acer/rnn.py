@@ -15,7 +15,7 @@ class RNN(snt.AbstractModule):
     Output: a distribution over action ( a normal distribution with fixed diagonal co-variance)
 
     """
-    def __init__(self, hidden_size, output_size, name="rnn_net"):
+    def __init__(self, hidden_size, name="rnn_net"):
         """
         hidden_size = size of the neural net
         output size = dimensionality of the action space
@@ -30,5 +30,8 @@ class RNN(snt.AbstractModule):
         x = tf.unstack(inputs, num=self._history_steps, axis=1)
         cell = BasicRNNCell(self._hidden_size, activation=tf.nn.relu)
         outputs, states = static_rnn(cell, x, dtype=tf.float32)
-        return tf.concat([outputs[-1], inputs], axis=1)
+        last_output = outputs[-1]
+        last_input = x[-1]
+        result = tf.concat([last_input, last_output], axis=1)
+        return result
 
