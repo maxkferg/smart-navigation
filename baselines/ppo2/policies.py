@@ -190,6 +190,7 @@ class PureLstmPolicy(object):
             ms = batch_to_seq(M, nenv, nsteps) # Done sequences
             h0, snew = lnlstm(xs, ms, S, 'lstm1', nh=nlstm)
             h0 = seq_to_batch(h0)
+            h0 = tf.concat(h0,X)
             # Policy
             h1 = fc(h0, 'pi_fc1', nh=128, init_scale=np.sqrt(2), act=tf.nn.relu)
             pi = fc(h1, 'pi', nact, act=tf.tanh, init_scale=0.01)
