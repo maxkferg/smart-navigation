@@ -9,10 +9,11 @@ from environments.collision.environment import ExecuteEnvironment
 from environments.collision.environment import LearningEnvironment
 
 
-ENVIRONMENTS = 64
+ENVIRONMENTS = 128
 PARTICLES = 2
 TIMESTEPS = 2e7
 DIRECTORY = 'results/ppo-gpu'
+
 
 def train(env_id, num_timesteps, seed, render):
     from baselines.common import set_global_seeds
@@ -40,7 +41,7 @@ def train(env_id, num_timesteps, seed, render):
 
     set_global_seeds(seed)
     policy = PureLstmPolicy
-    ppo2.learn(policy=policy, env=env, nsteps=32, nminibatches=4,
+    ppo2.learn(policy=policy, env=env, nsteps=64, nminibatches=4,
         lam=0.95, gamma=0.99, noptepochs=10, log_interval=1,
         save_interval=10,
         ent_coef=0.001,
