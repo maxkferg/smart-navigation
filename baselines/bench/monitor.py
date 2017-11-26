@@ -61,6 +61,9 @@ class Monitor(Wrapper):
     def get_current_state(self,*args,**kwargs):
         return self.env.get_current_state(*args,**kwargs)
 
+    def render(self,*args,**kwargs):
+        return self.env.render(*args,**kwargs)
+
     def reset(self):
         if not self.allow_early_resets and not self.needs_reset:
             raise RuntimeError("Tried to reset an environment before done. If you want to allow early resets, wrap your env with Monitor(env, path, allow_early_resets=True)")

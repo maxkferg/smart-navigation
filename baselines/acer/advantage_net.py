@@ -60,7 +60,7 @@ class AdvantageValueNet(snt.AbstractModule):
 
         # sample action from policy distribution
         u_n = u.sample([ self._n ])
-        
+
         #  get A(x_t,a_t)
         xa = tf.concat([phi_x, a_t], 1) # merge columns
         

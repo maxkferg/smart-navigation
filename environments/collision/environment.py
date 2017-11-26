@@ -83,7 +83,6 @@ class Environment:
     particle_speed = 20
     screen_width = 800
     screen_height = 800
-    background = None
     metadata = {
         'render.modes':['human']
     }
@@ -207,13 +206,13 @@ class Environment:
         return self.get_current_state()
 
 
-    def render(self):
+    def render(self, mode=None, close=None, background=None):
         """
         Render the environment
         """
         # Clear the screen
-        if self.background is not None:
-            pixelcopy.array_to_surface(self.screen, self.background)
+        if background is not None:
+            pixelcopy.array_to_surface(self.screen, background)
         else:
             self.screen.fill(self.universe.color)
 

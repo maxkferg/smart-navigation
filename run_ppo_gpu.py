@@ -44,8 +44,8 @@ def train(env_id, num_timesteps, seed, render):
     ppo2.learn(policy=policy, env=env, nsteps=64, nminibatches=4,
         lam=0.95, gamma=0.99, noptepochs=10, log_interval=1,
         save_interval=10,
-        ent_coef=0.001,
-        lr=1e-4,
+        ent_coef=0.002,
+        lr=1e-5,
         cliprange=0.2,
         total_timesteps=num_timesteps)
 

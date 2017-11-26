@@ -277,8 +277,8 @@ def evaluate(env, pi, render):
         reward += rew
         print('V:',vpred, 'Reward:', rew, 'A:',ac[0],ac[1])
         if render:
-           env.render()
-           #env.background = get_v_background(env, pi, stochastic)
+            background = get_v_background(env, pi, stochastic)
+            env.render(background=background)
     return reward
 
 
