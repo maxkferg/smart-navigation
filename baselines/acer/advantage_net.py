@@ -48,7 +48,7 @@ class AdvantageValueNet(snt.AbstractModule):
         adv_layer = snt.Linear(self._adv_layer_size, name="adv_layer")
         
         inputs = x_t#input_layer(x_t)
-        inputs = tf.reshape(inputs, [-1,28])
+        inputs = tf.reshape(inputs, [-1,48])
 
         # get the shared feature / can be removed and taken directly as input 
         phi_x = tf.nn.relu(feature_layer1(inputs))

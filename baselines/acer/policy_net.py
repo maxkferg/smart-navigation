@@ -41,7 +41,7 @@ class PolicyNet(snt.AbstractModule):
 
         mlp = snt.Sequential([layer_1,  tf.nn.relu , layer_2, tf.nn.relu , layer_3, tf.nn.tanh])
 
-        inputs = tf.reshape(inputs, [-1,28])
+        inputs = tf.reshape(inputs, [-1,48])
         mu = mlp(inputs)
 
         # dist = tf.contrib.distributions.Normal(loc=mu, scale = tf.ones_like(mu) * self._co_var)
