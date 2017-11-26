@@ -58,6 +58,8 @@ class Monitor(Wrapper):
             self.f.truncate()        
             self.logger = JSONLogger(self.f)
 
+    def get_current_state(self,*args,**kwargs):
+        return self.env.get_current_state(*args,**kwargs)
 
     def reset(self):
         if not self.allow_early_resets and not self.needs_reset:

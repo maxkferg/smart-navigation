@@ -20,6 +20,9 @@ from mpi4py import MPI
 
 PARTICLES = 2
 RENDER = True
+DIRECTORY = "results/ddpg"
+
+logger.configure(dir=DIRECTORY)
 
 
 def run(env_id, seed, noise_type, layer_norm, evaluation, render, **kwargs):
@@ -27,17 +30,16 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, render, **kwargs):
 
     # Configure things.
     rank = MPI.COMM_WORLD.Get_rank()
-    if rank != 0: logger.set_level(logger.DISABLED)
+    if rank != 0:
+        logger.set_level(logger.DISABLED)
 
     # Create envs.
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-
-    #gym.logger.setLevel(logging.WARN)
+    gym.logger.setLevel(logging.WARN)
 
     if evaluation and rank==0:
         eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-        #eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), 'gym_eval'))
-        #env = bench.Monitor(env, None)
+        eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), 'collision_eval'))
     else:
         eval_env = None
 

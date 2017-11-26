@@ -87,7 +87,7 @@ def traj_segment_generator(pi, env, horizon, stochastic, catastrophy=0):
             cur_ep_ret = 0
             cur_ep_len = 0
             cat = random.random()<catastrophy
-            ob = env.reset(cat)
+            ob = env.reset()
         t += 1
 
 def add_vtarg_and_adv(seg, gamma, lam):
@@ -108,7 +108,7 @@ def add_vtarg_and_adv(seg, gamma, lam):
 
 
 
-def learn(env, policy_func, *,
+def learn(train_env, eval_env, policy_func, *,
         timesteps_per_batch, # timesteps per actor per update
         clip_param, entcoeff, # clipping parameter epsilon, entropy coeff
         optim_epochs, optim_stepsize, optim_batchsize,# optimization hypers
@@ -122,8 +122,8 @@ def learn(env, policy_func, *,
     # Setup losses and stuff
     # ----------------------------------------
     saver = Saver()
-    ob_space = env.observation_space
-    ac_space = env.action_space
+    ob_space = train_env.observation_space
+    ac_space = train_env.action_space
     #low = [-1, -1]
     #high = [1, 1]
     #ac_space.high= np.array(high)
@@ -170,7 +170,7 @@ def learn(env, policy_func, *,
 
     # Prepare for rollouts
     # ----------------------------------------
-    seg_gen = traj_segment_generator(pi, env, timesteps_per_batch, stochastic=True)
+    seg_gen = traj_segment_generator(pi, train_env, timesteps_per_batch, stochastic=True)
 
     episodes_so_far = 0
     timesteps_so_far = 0
@@ -260,7 +260,7 @@ def learn(env, policy_func, *,
 
         if MPI.COMM_WORLD.Get_rank()==0 and iters_so_far%10==0:
             saver.save_model(directory, iters_so_far)
-            evaluate(env, pi, render)
+            evaluate(eval_env, pi, render)
 
 
 def evaluate(env, pi, render):

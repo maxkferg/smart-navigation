@@ -34,6 +34,7 @@ class ActionSpace(Space):
 
 
 class Spec:
+    id = "collision-environment"
     timestep_limit = 100
 
 class Metadata:
@@ -90,6 +91,7 @@ class Environment:
     """
     Environment that an algorithm can play with
     """
+    reward_range = [-2,1]
     action_dimensions = 2
     state_dimensions = 5 # The number of dimensions per particle (x,y,theta,tx,ty)
     state_history = 4
@@ -162,7 +164,6 @@ class Environment:
         # We clip the value even if the learning algorithm chooses not to
         # This should be seen as a last resort, to prevent simulation instability
         action = clipv(action, self.action_space)
-        print(action)
 
         # Particle 1 is being controlled
         steering = action[0]

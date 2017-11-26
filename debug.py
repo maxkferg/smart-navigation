@@ -52,9 +52,6 @@ def get_q(env, critic, action, n=40):
     x = x.flatten() # primary position is a grid
     y = y.flatten() # Primary position is a grid
 
-    # The number of points in each state history step
-    n_timestep = env.num_particles*env.state_dimensions
-
     # Set the primary position to (x,y) for all history
     state = env.get_current_state()
     state_batch = np.tile(state, (n**2,1,1))
