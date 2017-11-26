@@ -34,10 +34,10 @@ class PolicyNet(snt.AbstractModule):
     def _build(self, inputs):
         """Compute output Tensor from input Tensor."""
 
-        layer_0 = RNN(hidden_size=64, output_size=64, name="policy_rnn")
+        layer_0 = RNN(hidden_size=64, name="policy_rnn")
         layer_1 = snt.Linear(self._hidden_size, name="layer_1")
-        layer_2 = snt.Linear(self._hidden_size, name="layer_1")
-        layer_3 = snt.Linear(self._output_size, name="layer_2")
+        layer_2 = snt.Linear(self._hidden_size, name="layer_2")
+        layer_3 = snt.Linear(self._output_size, name="layer_3")
 
         mlp = snt.Sequential([layer_0, layer_1,  tf.nn.relu , layer_2, tf.nn.relu , layer_3, tf.nn.tanh])
 

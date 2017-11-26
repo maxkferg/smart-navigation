@@ -18,8 +18,8 @@ class AdvantageValueNet(snt.AbstractModule):
     """
     def __init__(self, 
                  hidden_size,
-                 val_layer_size = 1, # just one flly connected layer for now
-                 adv_layer_size = 1,
+                 val_layer_size = 64,
+                 adv_layer_size = 64,
                  n = 5,
                  name="adv_val_net"):
         """
@@ -41,12 +41,14 @@ class AdvantageValueNet(snt.AbstractModule):
         u: input form policy network, returns a distribution
         n: no of samples
         """
-        input_layer = RNN(hidden_size=64, output_size=28, name="value_rnn")
+        rnn_hidden_units = 64
+        input_layer = RNN(hidden_size=rnn_hidden_units, name="value_rnn")
         feature_layer1 = snt.Linear(self._hidden_size, name="x_feature_layer1")
         feature_layer2 = snt.Linear(self._hidden_size, name="x_feature_layer2")
         val_layer = snt.Linear(self._val_layer_size, name="val_layer")
         adv_layer = snt.Linear(self._adv_layer_size, name="adv_layer")
 
+        # Start building the graph
         inputs = input_layer(x_t)
 
         # get the shared feature / can be removed and taken directly as input 
@@ -56,7 +58,7 @@ class AdvantageValueNet(snt.AbstractModule):
         # value function estimate
         V_x = val_layer(phi_x)
 
-        # sample action from policy distribution 
+        # sample action from policy distribution
         u_n = u.sample([ self._n ])
         
         #  get A(x_t,a_t)
@@ -91,6 +93,8 @@ class AdvantageValueNet(snt.AbstractModule):
         
         local_vars = [var for var in t_vars if self._name in var.name]
         target_vars = [var for var in t_vars if target_name in var.name]
+
+        print("local_vars:", local_vars)
         
         copy_op = []
         

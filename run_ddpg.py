@@ -12,7 +12,7 @@ import baselines.ddpg.training as training
 from baselines.ddpg.models import Actor, Critic
 from baselines.ddpg.memory import Memory
 from baselines.ddpg.noise import *
-from environments.stacked.environment import LearningEnvironment
+from environments.collision.environment import LearningEnvironment
 from environments.util.stacked_environment import StackedEnvWrapper
 
 import gym

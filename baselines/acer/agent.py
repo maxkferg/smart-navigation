@@ -205,6 +205,7 @@ class Agent():
         #Apply local gradients to global network
         
         self.critic_grads = tf.gradients(self.critic_loss, self.local_critic_vars)
+        self.critic_grads = tf.clip_by_global_norm(self.critic_grads, -1, 1, name="critic_grad_clip")
         
         self.critic_train_op = self.optimizer.apply_gradients(zip(self.critic_grads, self.global_critic_vars),
                                                              global_step=tf.train.get_global_step())
