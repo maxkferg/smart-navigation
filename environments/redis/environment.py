@@ -162,6 +162,7 @@ class Environment:
         # We clip the value even if the learning algorithm chooses not to
         # This should be seen as a last resort, to prevent simulation instability
         action = clipv(action, self.action_space)
+        print(action)
 
         # Particle 1 is being controlled
         steering = action[0]
@@ -197,10 +198,6 @@ class Environment:
         # Enforce speed limits
         if abs(self.primary.speed) > 1:
             reward -= 0.01
-
-        # Softly penalize reversing
-        if self.primary.speed < 0:
-            reward -= 0.001
 
         # Enforce penalty regions
         if self.universe.isOnPenalty(self.primary):

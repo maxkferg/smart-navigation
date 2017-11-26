@@ -13,7 +13,7 @@ def scale_image(image,n=800):
     Scale image to 800 x 800
     """
     import cv2 as cv
-    return cv2.resize(image, (n, n))
+    return cv.resize(image, (n, n))
 
 
 def map_to_colors(pixels):
@@ -57,9 +57,9 @@ def get_q(env, critic, action, n=40):
 
     # Set the primary position to (x,y) for all history
     state = env.get_current_state()
-    state_batch = np.tile(state, (n**2,1))
-    state_batch[:,0:-1:n_timestep] = x[:,None]
-    state_batch[:,1:-1:n_timestep] = y[:,None]
+    state_batch = np.tile(state, (n**2,1,1))
+    state_batch[:,:,0] = x[:,None]
+    state_batch[:,:,1] = y[:,None]
 
     # Get Q values
     q = critic(state_batch)#, action_batch)

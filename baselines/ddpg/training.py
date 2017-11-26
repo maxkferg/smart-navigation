@@ -133,7 +133,7 @@ def train(env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, render, pa
                     for t_rollout in range(nb_eval_steps):
                         eval_action, eval_q = agent.pi(eval_obs, apply_noise=False, compute_Q=True)
 
-                        eval_obs, eval_r, eval_done, eval_info = eval_env.step(action, 1)
+                        eval_obs, eval_r, eval_done, eval_info = eval_env.step(action)
                         eval_env.background = get_q_background(eval_env, agent.q, eval_action)
 
                         # scale for execution in env (as far as DDPG is concerned, every action is in [-1, 1])

@@ -144,11 +144,6 @@ class Particle:
 
     def control(self, steering, throttle):
         """ Change angle and speed by a given vector """
-
-        # Throttle less than 0.3 just stalls
-        if abs(throttle)<0.3:
-            throttle = 0
-
         self.angle += steering * self.speed * self.steering_sensitivity
         self.speed += throttle * self.acceleration_sensitivity
         self.control_signal = (steering,throttle)
