@@ -16,13 +16,13 @@ class Model(object):
         act_model = policy(sess, ob_space, ac_space, nbatch_act, 1, reuse=False)
         train_model = policy(sess, ob_space, ac_space, nbatch_train, nsteps, reuse=True)
 
-        A = train_model.pdtype.sample_placeholder([None])
-        ADV = tf.placeholder(tf.float32, [None])
-        R = tf.placeholder(tf.float32, [None])
-        OLDNEGLOGPAC = tf.placeholder(tf.float32, [None])
-        OLDVPRED = tf.placeholder(tf.float32, [None])
-        LR = tf.placeholder(tf.float32, [])
-        CLIPRANGE = tf.placeholder(tf.float32, [])
+        A = train_model.pdtype.sample_placeholder([None], name="A")
+        ADV = tf.placeholder(tf.float32, [None], name="ADV")
+        R = tf.placeholder(tf.float32, [None], name="R")
+        OLDNEGLOGPAC = tf.placeholder(tf.float32, [None], name="OLDNEGLOGPAC")
+        OLDVPRED = tf.placeholder(tf.float32, [None], name="OLDVPRED")
+        LR = tf.placeholder(tf.float32, [], name="LR")
+        CLIPRANGE = tf.placeholder(tf.float32, [], name="CLIPRANGE")
 
         neglogpac = train_model.pd.neglogp(A)
         entropy = tf.reduce_mean(train_model.pd.entropy())
@@ -51,7 +51,7 @@ class Model(object):
         def train(lr, cliprange, obs, returns, masks, actions, values, neglogpacs, states=None):
             advs = returns - values
             advs = (advs - advs.mean()) / (advs.std() + 1e-8)
-            td_map = {train_model.X:obs, A:actions, ADV:advs, R:returns, LR:lr, 
+            td_map = {train_model.X:obs, A:actions, ADV:advs, R:returns, LR:lr,
                     CLIPRANGE:cliprange, OLDNEGLOGPAC:neglogpacs, OLDVPRED:values}
             if states is not None:
                 td_map[train_model.S] = states
@@ -107,7 +107,7 @@ class Runner(object):
             mb_actions.append(actions)
             mb_values.append(values)
             mb_neglogpacs.append(neglogpacs)
-            mb_dones.append(self.dones)            
+            mb_dones.append(self.dones)
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
             for info in infos:
                 maybeepinfo = info.get('episode')
@@ -124,7 +124,7 @@ class Runner(object):
         #discount/bootstrap off value fn
         mb_returns = np.zeros_like(mb_rewards)
         mb_advs = np.zeros_like(mb_rewards)
-        lastgaelam = 0        
+        lastgaelam = 0
         for t in reversed(range(self.nsteps)):
             if t == self.nsteps - 1:
                 nextnonterminal = 1.0 - self.dones
@@ -201,6 +201,7 @@ def learn(*, policy, env, nsteps, total_timesteps, ent_coef, lr,
                     slices = (arr[mbinds] for arr in (obs, returns, masks, actions, values, neglogpacs))
                     mblossvals.append(model.train(lrnow, cliprangenow, *slices))
         else: # recurrent version
+            print("nenv",nenvs,"nminibatches",nminibatches)
             assert nenvs % nminibatches == 0
             envsperbatch = nenvs // nminibatches
             envinds = np.arange(nenvs)
@@ -214,7 +215,7 @@ def learn(*, policy, env, nsteps, total_timesteps, ent_coef, lr,
                     mbflatinds = flatinds[mbenvinds].ravel()
                     slices = (arr[mbflatinds] for arr in (obs, returns, masks, actions, values, neglogpacs))
                     mbstates = states[mbenvinds]
-                    mblossvals.append(model.train(lrnow, cliprangenow, *slices, mbstates))            
+                    mblossvals.append(model.train(lrnow, cliprangenow, *slices, mbstates))
 
         lossvals = np.mean(mblossvals, axis=0)
         tnow = time.time()

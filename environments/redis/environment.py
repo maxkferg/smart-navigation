@@ -118,7 +118,7 @@ class Environment:
         self.reward_so_far = 0
         self.num_particles = num_particles
         self.state_size = num_particles*self.state_dimensions + self.action_dimensions
-        self.observation_space = ObservationSpace(-1, 1, shape=(self.state_history, self.state_size))
+        self.observation_space = ObservationSpace(-1, 1, shape=(self.state_size,))
         self.action_space = ActionSpace(-1, 1, self.action_dimensions)
         self.previous_action = np.zeros(self.action_space.shape)
 
@@ -327,15 +327,17 @@ class Environment:
             state.extend(particle.get_state_vector(self.screen_width, self.screen_height))
         state.extend(self.previous_action)
 
+        return state
+
         # Append to the state buffer
         # Most recent state is last
-        while len(self.state_buffer) <= self.state_history:
-            self.state_buffer.append(state)
-        self.state_buffer.pop()
+        #while len(self.state_buffer) <= self.state_history:
+        #    self.state_buffer.append(state)
+        #self.state_buffer.pop()
 
         # Convert to numpy array (self.state_history, self.state_size)
-        state = np.array(self.state_buffer)
-        return state
+        #state = np.array(self.state_buffer)
+        #return state
 
 
     def close(self):
