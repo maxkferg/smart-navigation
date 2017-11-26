@@ -178,7 +178,7 @@ class MlpPolicy(object):
 
 
 class PureLstmPolicy(object):
-    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, nlstm=128, reuse=False):
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, nlstm=64, reuse=False):
         nenv = nbatch // nsteps
         ob_shape = add_batch_dimension(ob_space.shape, nbatch)
         nact = ac_space.n
@@ -188,10 +188,15 @@ class PureLstmPolicy(object):
         with tf.variable_scope("model", reuse=reuse):
             xs = batch_to_seq(X, nenv, nsteps) # Observation sequences
             ms = batch_to_seq(M, nenv, nsteps) # Done sequences
-            h5, snew = lnlstm(xs, ms, S, 'lstm1', nh=nlstm)
-            h5 = seq_to_batch(h5)
-            pi = fc(h5, 'pi', nact, act=tf.tanh)
-            vf = fc(h5, 'v', 1, act=lambda x:x)
+            h0, snew = lnlstm(xs, ms, S, 'lstm1', nh=nlstm)
+            h0 = seq_to_batch(h0)
+            # Policy
+            h1 = fc(h0, 'pi_fc1', nh=128, init_scale=np.sqrt(2), act=tf.nn.relu)
+            pi = fc(h1, 'pi', nact, act=tf.tanh, init_scale=0.01)
+            # Value function
+            h1 = fc(h0, 'vf_fc1', nh=128, init_scale=np.sqrt(2), act=tf.nn.relu)
+            vf = fc(h1, 'vf', 1, act=lambda x:x)
+            # Current policy variance
             logstd = tf.get_variable(name="logstd", shape=[1, nact], initializer=tf.zeros_initializer())
 
         pdparam = tf.concat([pi, pi * 0.0 + logstd], axis=1)

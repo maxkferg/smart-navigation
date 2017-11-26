@@ -16,32 +16,14 @@ from skimage.draw import circle
 from .simulation.utils import cart2pol
 from .simulation.universe import Universe
 from .experiment.particles import RealObject, RealTarget
+from ..util.spaces import ObservationSpace, ActionSpace
 import seaborn as sns; sns.set()
-
-
-class Space(gym.spaces.Box):
-    """A space with limits"""
-    def __init__(self, low, high, shape=None):
-        super().__init__(low, high, shape)
-        self.n = np.prod(shape)
-
-class ObservationSpace(Space):
-    pass
-
-
-class ActionSpace(Space):
-    pass
 
 
 class Spec:
     id = "collision-environment"
     timestep_limit = 100
 
-class Metadata:
-    def copy(self):
-        return self
-    def update(self,metadata):
-        pass
 
 
 def ttl_color(ttl):
@@ -94,20 +76,17 @@ class Environment:
     reward_range = [-2,1]
     action_dimensions = 2
     state_dimensions = 5 # The number of dimensions per particle (x,y,theta,tx,ty)
-    state_history = 4
-    state_buffer = []
     max_steps = 100
-    record_catastrophies = True
 
     spec = Spec()
-    metadata = Metadata()
     screen = None
     particle_speed = 20
     screen_width = 800
     screen_height = 800
     background = None
-    snapshots = deque(maxlen=10)
-    catastrophies = deque(maxlen=1000)
+    metadata = {
+        'render.modes':['human']
+    }
 
 
     def __init__(self, primary, num_particles, particle_size, disable_render):
@@ -327,17 +306,8 @@ class Environment:
             state.extend(particle.get_state_vector(self.screen_width, self.screen_height))
         state.extend(self.previous_action)
 
-        return state
+        return np.array(state)
 
-        # Append to the state buffer
-        # Most recent state is last
-        #while len(self.state_buffer) <= self.state_history:
-        #    self.state_buffer.append(state)
-        #self.state_buffer.pop()
-
-        # Convert to numpy array (self.state_history, self.state_size)
-        #state = np.array(self.state_buffer)
-        #return state
 
 
     def close(self):

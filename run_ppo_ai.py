@@ -6,8 +6,8 @@ from baselines import logger
 from baselines.ppo1.rnn_policy import RnnPolicy
 from baselines.ppo1 import pposgd_simple
 from baselines.common import set_global_seeds, tf_util as U
-from environments.redis.environment import ExecuteEnvironment
-from environments.redis.environment import LearningEnvironment
+from environments.collision.environment import ExecuteEnvironment, LearningEnvironment
+from environments.util.stacked_environment import StackedEnvWrapper
 from mpi4py import MPI
 
 
@@ -34,7 +34,10 @@ def train(env_id, num_timesteps, seed, render):
     set_global_seeds(workerseed)
 
     train_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
+    train_env = StackedEnvWrapper(train_env, state_history_len=4)
+
     eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
+    eval_env = StackedEnvWrapper(eval_env, state_history_len=4)
     eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), "monitor.json"))
 
     pposgd_simple.learn(train_env, eval_env, policy_fn,
@@ -56,6 +59,7 @@ def evaluate(env_id, render):
     """Evaluate the policy in the simulation"""
     U.make_session(num_cpu=4).__enter__()
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
+    env = StackedEnvWrapper(env, state_history_len=4)
     pposgd_simple.run_evaluation(env, policy_fn, directory=DIRECTORY, render=render)
     env.close()
 
@@ -66,6 +70,7 @@ def execute(env_id, render):
     from baselines.ppo1 import pposgd_simple
     U.make_session(num_cpu=4).__enter__()
     env = ExecuteEnvironment(num_particles=PARTICLES, disable_render=not render)
+    env = StackedEnvWrapper(env, state_history_len=4)
     pposgd_simple.run_evaluation(env, policy_fn, directory=DIRECTORY, render=render)
     env.close()
 

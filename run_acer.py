@@ -14,7 +14,7 @@ import shutil
 # reset stuff
 tf.reset_default_graph()
 
-
+import gym
 import time
 import pylab
 import seaborn as sns
@@ -24,11 +24,13 @@ import random
 
 Transition = collections.namedtuple("Transition", ["state", "action", "reward", "done", "distribution", "next_state"])
 
+from baselines import bench, logger
 from baselines.acer.memory import Memory
 from baselines.acer.policy_net import PolicyNet
 from baselines.acer.advantage_net import AdvantageValueNet
 from baselines.acer.agent import Agent
-from environments.redis.environment import LearningEnvironment
+from environments.collision.environment import LearningEnvironment
+from environments.util.stacked_environment import StackedEnvWrapper
 
 
 
@@ -52,21 +54,26 @@ tf.flags.DEFINE_integer("update_steps", 1, "Number of off policy updates to perf
 tf.flags.DEFINE_boolean("render", True, "Should we render")
 
 
+
 FLAGS = tf.flags.FLAGS
 PARTICLES = 2
 
+logger.configure(dir=FLAGS.model_dir)
 
-import gym
-from gym.wrappers import Monitor
 
+
+
+count = 0
 
 def make_env(render):
     """
     create a copy of the environment and return that back
     """
+    global count
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-    #env.seed(0)
-
+    env = StackedEnvWrapper(env, num_state_history=4)
+    env = bench.Monitor(env, os.path.join(logger.get_dir(), 'monitor-%i.json'%count))
+    count += 1
     return env
 
 RENDER = FLAGS.render

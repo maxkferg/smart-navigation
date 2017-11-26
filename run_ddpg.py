@@ -12,7 +12,8 @@ import baselines.ddpg.training as training
 from baselines.ddpg.models import Actor, Critic
 from baselines.ddpg.memory import Memory
 from baselines.ddpg.noise import *
-from environments.redis.environment import LearningEnvironment
+from environments.stacked.environment import LearningEnvironment
+from environments.util.stacked_environment import StackedEnvWrapper
 
 import gym
 import tensorflow as tf
@@ -35,10 +36,12 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, render, **kwargs):
 
     # Create envs.
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
+    env = StackedEnvWrapper(env, state_history_len=4)
     gym.logger.setLevel(logging.WARN)
 
     if evaluation and rank==0:
         eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
+        eval_env = StackedEnvWrapper(eval_env, state_history_len=4)
         eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), 'collision_eval'))
     else:
         eval_env = None

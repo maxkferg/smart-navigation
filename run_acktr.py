@@ -10,39 +10,17 @@ from baselines import bench
 from baselines.acktr.acktr_cont import learn
 from baselines.acktr.policies import GaussianMlpPolicy
 from baselines.acktr.value_functions import NeuralNetValueFunction
-from environments.redis.environment import LearningEnvironment, ObservationSpace
+from environments.collision.environment import LearningEnvironment, ObservationSpace
 
 PARTICLES = 2
-
-class AcktrEnv(LearningEnvironment):
-    """
-    Patch the environment so it works with acktr
-    """
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        self.observation_space = ObservationSpace(-1, 1, shape=(self.state_size))
-
-    def _last_state(self,ob):
-        return ob[-1,:]
-
-    def reset(self,*args,**kwargs):
-        ob = super().reset(*args,**kwargs)
-        return self._last_state(ob)
-
-    def step(self,*args,**kwargs):
-        ob, rew, done, info = super().step(*args,**kwargs)
-        return self._last_state(ob), rew, done, info
-
+DIRECTORY = "results/acktr"
 
 
 def train(env_id, num_timesteps, seed, render):
-    #env=gym.make(env_id)
-    env = AcktrEnv(num_particles=PARTICLES, disable_render=not render)
-    #if logger.get_dir():
-    #    env = bench.Monitor(env, os.path.join(logger.get_dir(), "monitor.json"))
-    #set_global_seeds(seed)
-    #env.seed(seed)
-    #gym.logger.setLevel(logging.WARN)
+    env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
+    env = bench.Monitor(env, os.path.join(logger.get_dir(), "monitor.json"))
+    set_global_seeds(seed)
+    gym.logger.setLevel(logging.WARN)
 
     with tf.Session(config=tf.ConfigProto()) as session:
         ob_dim = env.observation_space.shape[0]
@@ -66,4 +44,5 @@ if __name__ == "__main__":
     parser.add_argument('--env', help='environment ID', type=str, default="Reacher-v1")
     parser.add_argument('--render', help='Choose whether to render', type=bool, default=False)
     args = parser.parse_args()
+    logger.configure(dir=DIRECTORY)
     train(args.env, num_timesteps=5e7, seed=args.seed, render=args.render)

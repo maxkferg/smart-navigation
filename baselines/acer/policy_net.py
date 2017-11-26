@@ -10,13 +10,13 @@ class PolicyNet(snt.AbstractModule):
     """
     to model  f(.|\phi_{\theta'}(x_i))
     parameters denoted by \theta'
-    
+
     Input: the observed state, x: 1 x INPUT_DIM
-    
+
     Output: a distribution over action ( a normal distribution with fixed diagonal co-variance)
-    
+
     """
-    def __init__(self, 
+    def __init__(self,
                  hidden_size,
                  output_size,
                  co_var = 0.3,
@@ -34,14 +34,13 @@ class PolicyNet(snt.AbstractModule):
     def _build(self, inputs):
         """Compute output Tensor from input Tensor."""
 
-        #layer_0 = RNN(hidden_size=64, output_size=64, name="policy_rnn")
+        layer_0 = RNN(hidden_size=64, output_size=64, name="policy_rnn")
         layer_1 = snt.Linear(self._hidden_size, name="layer_1")
         layer_2 = snt.Linear(self._hidden_size, name="layer_1")
         layer_3 = snt.Linear(self._output_size, name="layer_2")
 
-        mlp = snt.Sequential([layer_1,  tf.nn.relu , layer_2, tf.nn.relu , layer_3, tf.nn.tanh])
+        mlp = snt.Sequential([layer_0, layer_1,  tf.nn.relu , layer_2, tf.nn.relu , layer_3, tf.nn.tanh])
 
-        inputs = tf.reshape(inputs, [-1,48])
         mu = mlp(inputs)
 
         # dist = tf.contrib.distributions.Normal(loc=mu, scale = tf.ones_like(mu) * self._co_var)
