@@ -36,12 +36,12 @@ from environments.util.stacked_environment import StackedEnvWrapper
 
 tf.flags.DEFINE_string("model_dir", "./results/acer/model/", "Directory to write Tensorboard summaries and videos to.")
 tf.flags.DEFINE_string("env", "InvertedPendulum-v1", "Name of gym Mujoco environment, e.g. InvertedPendulum-v1")
-tf.flags.DEFINE_integer("k_steps", 8, "Number of k-step returns.")
+tf.flags.DEFINE_integer("k_steps", 128, "Number of k-step returns.")
 tf.flags.DEFINE_integer("max_episode_len", 100, "Maximum episode length.")
-tf.flags.DEFINE_integer("eval_every_sec", 30, "Evaluate the policy every N seconds")
-tf.flags.DEFINE_boolean("reset", True, "If set, delete the existing model directory and start training from scratch.")
+tf.flags.DEFINE_integer("eval_every_sec", 10, "Evaluate the policy every N seconds")
+tf.flags.DEFINE_boolean("reset", False, "If set, delete the existing model directory and start training from scratch.")
 tf.flags.DEFINE_integer("feature_layer_size", 128, "Num of units in the hidden layer for feature processing")
-tf.flags.DEFINE_integer("num_agents", 16, "Number of threads to run. ")
+tf.flags.DEFINE_integer("num_agents", 16 , "Number of threads to run. ")
 tf.flags.DEFINE_float("co_var", 0.1, "Diagonal covariance for the multi variate normal policy.")
 tf.flags.DEFINE_float("delta", 1.0, "Delta as defined in ACER for TRPO.")
 tf.flags.DEFINE_float("lr", 1e-5, "Learning rate for the shared optimzer")
@@ -180,7 +180,7 @@ for i in range(num_agents):
                         co_var=CO_VAR,
                         flags = FLAGS))
 
-saver = tf.train.Saver(keep_checkpoint_every_n_hours=2.0, max_to_keep=10)
+saver = tf.train.Saver(keep_checkpoint_every_n_hours=1.0, max_to_keep=10)
 
 # separate agent for keeping track of the videos as well as plotting to tensorboard
 policy_monitor_agent = Agent(name= "policy_monitor",

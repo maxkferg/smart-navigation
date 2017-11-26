@@ -307,12 +307,14 @@ class Agent():
                 self.x_i : traj[-1].next_state[None]     #np.reshape(traj[-1].next_state, (1,-1))
             })[0][0,0]
 
-        Q_opc = Q_ret 
+        Q_opc = Q_ret
         
         # reverse loop
+        #print('-------')
         for transition in traj[::-1]:
             Q_ret = transition.reward +  self.FLAGS.gamma * Q_ret
             Q_opc = transition.reward +  self.FLAGS.gamma * Q_opc
+            #print(transition.reward,"Q_ret:",Q_ret)
             
             #
             x_t = transition.state[None] #np.reshape(transition.state, (1,-1))
@@ -337,7 +339,7 @@ class Agent():
             val_s.append((min(p_t[0,0],1.0) * (Q_ret - q_t[0,0])) + v_t[0,0] )
             
             # update again
-            Q_ret  = c_t[0,0] * (Q_ret - q_t[0,0]) + v_t[0,0] 
+            Q_ret  = c_t[0,0] * (Q_ret - q_t[0,0]) + v_t[0,0]
             Q_opc = (Q_opc - q_t[0,0]) + v_t[0,0]
             
         
