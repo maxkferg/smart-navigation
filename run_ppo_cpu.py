@@ -13,12 +13,9 @@ from mpi4py import MPI
 
 PARTICLES = 2
 TIMESTEPS = 5e7 #3e7
-DIRECTORY = 'results/ppo'
+DIRECTORY = 'results/ppo-resnet'
 
 logger.configure(dir=DIRECTORY)
-
-# Disable the GPU
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 
 def policy_fn(name, ob_space, ac_space):
@@ -83,8 +80,12 @@ def main():
     parser.add_argument('--train', help='Train Model', type=bool, default=False)
     parser.add_argument('--execute', help='Execute real solution', type=bool, default=False)
     parser.add_argument('--render', help='Render evaluation', type=bool, default=False)
+    parser.add_argument('--gpu', help='Run on GPU', type=bool, default=False)
     args = parser.parse_args()
 
+    # Disable the GPU
+    if not args.gpu:
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     if args.train:
         train(args.env, num_timesteps=TIMESTEPS, seed=args.seed, render=args.render)
     elif args.execute:
