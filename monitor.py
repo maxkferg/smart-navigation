@@ -9,7 +9,7 @@ import sys
 import time
 import random
 import argparse
-from environments.redis.environment import ViewingEnvironment
+from environments.collision.environment import ViewingEnvironment
 
 MIN_TARGET = 200
 MAX_TARGET = 600

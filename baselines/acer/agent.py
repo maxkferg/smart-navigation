@@ -205,7 +205,7 @@ class Agent():
         #Apply local gradients to global network
         
         self.critic_grads = tf.gradients(self.critic_loss, self.local_critic_vars)
-        self.critic_grads,_ = tf.clip_by_global_norm(self.critic_grads, clip_norm=1.0, name="critic_grad_clip")
+        self.critic_grads,_ = tf.clip_by_global_norm(self.critic_grads, clip_norm=10.0, name="critic_grad_clip")
         
         self.critic_train_op = self.optimizer.apply_gradients(zip(self.critic_grads, self.global_critic_vars),
                                                              global_step=tf.train.get_global_step())
@@ -314,7 +314,6 @@ class Agent():
         for transition in traj[::-1]:
             Q_ret = transition.reward +  self.FLAGS.gamma * Q_ret
             Q_opc = transition.reward +  self.FLAGS.gamma * Q_opc
-            #print(transition.reward,"Q_ret:",Q_ret)
             
             #
             x_t = transition.state[None] #np.reshape(transition.state, (1,-1))
@@ -327,7 +326,6 @@ class Agent():
             states.append(x_t)
             actions.append(a_t)
             mu_dist.append(u_t)
-            
             
             # get estimates from existing function approximators
             v_t, c_t, p_t, q_t = sess.run([self.val_xi, self.c_i, self.p_i, self.adv_xi_ai],
@@ -375,7 +373,7 @@ class Agent():
         # that's it 
         
         
-    def random_exploration_step(self, sess):
+    def random_exploration_step(self, sess, render=False):
         """
         follow a random uniform policy to gather experiences and add them to the replay memory
         """
@@ -392,6 +390,9 @@ class Agent():
             
             next_state, reward, done, info = self.env.step(action) # next state, reward, terminal
             
+
+            if render:
+                self.env.render()
             # insert this in memory with a uniform distribution over actions
             
             self.memory.add(Transition(state=state, action=action, 
@@ -416,7 +417,7 @@ class Agent():
         return episode_reward, episode_len, local_t, global_t
         
         
-    def current_policy_step(self, sess, add_to_mem = True):
+    def current_policy_step(self, sess, add_to_mem = True, render = False):
         """
         follow the current policy network and gather trajectories and update them in the replay memory
         
@@ -440,6 +441,9 @@ class Agent():
             action = np.reshape(action, (self.ACTION_DIM,))
             
             next_state, reward, done, info = self.env.step(action) # next state, reward, terminal
+
+            if render:
+                self.env.render()
             
             # insert this in memory with a uniform distribution over actions
             if add_to_mem:  # can also remove this and still work/optimization
@@ -464,7 +468,7 @@ class Agent():
         return episode_reward, episode_len, local_t, global_t
 
         
-    def evaluate_policy(self, sess,  eval_every = 3600, coord = None):
+    def evaluate_policy(self, sess,  eval_every = 3600, coord = None, render = False):
         """
         follow the current policy network and gather trajectories and update them in the replay memory
         
@@ -494,7 +498,7 @@ class Agent():
                     global_step, _ = sess.run([tf.train.get_global_step(), self.sync_local_actor_op])
         
                     #for each episode reset first        
-                    eps_reward, eps_len, _ , global_t = self.current_policy_step(sess, add_to_mem=False)
+                    eps_reward, eps_len, _ , global_t = self.current_policy_step(sess, add_to_mem=False, render=render)
                     
                     
                     # Add summaries

@@ -179,9 +179,6 @@ class Universe:
         """ Tests whether two particles overlap
             If they do, make them bounce, i.e. update their angle, speed and position """
 
-        if p1.ghost or p2.ghost:
-            return
-
         dx = p1.x - p2.x
         dy = p1.y - p2.y
 

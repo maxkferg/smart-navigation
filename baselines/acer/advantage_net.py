@@ -16,7 +16,7 @@ class AdvantageValueNet(snt.AbstractModule):
     Output: a distribution over action ( a normal distribution with fixed diagonal co-variance)
     
     """
-    def __init__(self, 
+    def __init__(self,
                  hidden_size,
                  val_layer_size = 1,
                  adv_layer_size = 1,
@@ -51,7 +51,7 @@ class AdvantageValueNet(snt.AbstractModule):
         # Start building the graph
         inputs = input_layer(x_t)
 
-        # get the shared feature / can be removed and taken directly as input 
+        # get the shared feature / can be removed and taken directly as input
         phi_x = tf.nn.relu(feature_layer1(inputs))
         phi_x = tf.nn.relu(feature_layer2(phi_x))
 
@@ -94,8 +94,6 @@ class AdvantageValueNet(snt.AbstractModule):
         local_vars = [var for var in t_vars if self._name in var.name]
         target_vars = [var for var in t_vars if target_name in var.name]
 
-        print("local_vars:", local_vars)
-        
         copy_op = []
         
         for l_var,t_var in zip(local_vars,target_vars):

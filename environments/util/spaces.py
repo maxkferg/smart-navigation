@@ -1,7 +1,6 @@
 import gym.spaces
 import numpy as np
 
-
 def prepend_dimension(shape, dimension):
 	"""Insert the batch size as the first dimesion of a shape tuple"""
 	shape = list(shape)
@@ -14,7 +13,6 @@ class Space(gym.spaces.Box):
     def __init__(self, low, high, shape=None):
         super().__init__(low, high, shape)
         self.n = np.prod(shape)
-
 
 class ObservationSpace(Space):
     pass

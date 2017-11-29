@@ -30,10 +30,13 @@ def ttl_color(ttl):
     """Return a color based on the ttl"""
     cmap = matplotlib.cm.get_cmap('YlGn')
     if ttl == 0:
-        color = (1,0,0)
+        color = (235,101,99) # Bright pink
+    elif ttl>=1:
+        color = (220,230,225) # Grey
     else:
         color = cmap(ttl/10)
-    return [int(255*color) for color in color]
+        color = [int(255*color) for color in color]
+    return color
 
 
 def clip(val, minimum, maximum):
@@ -227,7 +230,7 @@ class Environment:
 
         # Draw particles
         for p in self.universe.particles:
-            edge = np.maximum(p.color, (200,200,200))
+            edge = np.maximum(p.color, (255,255,255))
             self.draw_circle(int(p.x), int(p.y), p.radius, p.color, edgeColor=edge, filled=True)
 
         # Draw primary target

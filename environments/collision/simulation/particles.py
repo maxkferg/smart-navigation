@@ -11,7 +11,7 @@ MAX_SPEED = 1.4 # Maximum simulation speed
 STEERING_SENSITIVITY = 0.4 # Radians I rotate at speed=1 and steering=1
 ACCELERATION_SENSITIVITY = 0.6 # The amount I speed up at full throttle
 PIXELS_PER_SPEED = 40 # The pixels travelled at speed = 1
-ADVERSARY_SPEED = 0.3
+ADVERSARY_SPEED = 0.2
 
 
 

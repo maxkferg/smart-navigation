@@ -12,7 +12,7 @@ import shutil
 
 
 # reset stuff
-tf.reset_default_graph() 
+tf.reset_default_graph()
 
 import gym
 import time
@@ -41,17 +41,18 @@ tf.flags.DEFINE_integer("max_episode_len", 100, "Maximum episode length.")
 tf.flags.DEFINE_integer("eval_every_sec", 10, "Evaluate the policy every N seconds")
 tf.flags.DEFINE_boolean("reset", False, "If set, delete the existing model directory and start training from scratch.")
 tf.flags.DEFINE_integer("feature_layer_size", 128, "Num of units in the hidden layer for feature processing")
-tf.flags.DEFINE_integer("num_agents", 16 , "Number of threads to run. ")
+tf.flags.DEFINE_integer("num_agents", 64 , "Number of threads to run. ")
 tf.flags.DEFINE_float("co_var", 0.1, "Diagonal covariance for the multi variate normal policy.")
 tf.flags.DEFINE_float("delta", 1.0, "Delta as defined in ACER for TRPO.")
 tf.flags.DEFINE_float("lr", 1e-5, "Learning rate for the shared optimzer")
-tf.flags.DEFINE_float("c", 2.0, "Importance sampling truncated ratio")
+tf.flags.DEFINE_float("c", 10.0, "Importance sampling truncated ratio")
 tf.flags.DEFINE_float("gamma", 0.99, "Discount factor")
 tf.flags.DEFINE_float("tau", 0.999, "Soft update rule for average network params")
-tf.flags.DEFINE_integer("pure_exploration_steps", 4, "Number of pure random policy steps to take  ")
-tf.flags.DEFINE_integer("current_policy_steps", 32, "Number of current policy steps to take  ")
+tf.flags.DEFINE_integer("pure_exploration_steps", 1, "Number of pure random policy steps to take  ")
+tf.flags.DEFINE_integer("current_policy_steps", 4, "Number of current policy steps to take  ")
 tf.flags.DEFINE_integer("update_steps", 1, "Number of off policy updates to perform per epoch  ")
 tf.flags.DEFINE_boolean("render", True, "Should we render")
+tf.flags.DEFINE_boolean("evaluate", False, "Should we evaluate and render (blocking)")
 
 
 
@@ -202,6 +203,10 @@ with tf.Session() as sess:
     if latest_checkpoint:
         print("Loading model checkpoint: {}".format(latest_checkpoint))
         saver.restore(sess, latest_checkpoint)
+
+    # Start a blocking evaluation
+    if FLAGS.evaluate:
+        policy_monitor_agent.evaluate_policy(sess, eval_every=0, coord=coord, render=True)
 
     # Run the agents
     agent_threads = []
