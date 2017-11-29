@@ -57,13 +57,10 @@ class RealObject(Particle):
             input("Press enter to continue")
         # Now execute the control
         steering = -steering # Real steering is reversed to simulation
-        choice = input("Execute steering: %.3f throttle %.3f?"%(steering,throttle))
-        if choice == "y":
-            control_car(rotation=steering, throttle=throttle)
-            time.sleep(0.1)
-            control_car(rotation=steering, throttle=0, reset=True)
-
-
+        control_car(rotation=steering, throttle=throttle)
+        time.sleep(0.1)
+        control_car(rotation=steering, throttle=0, reset=True)
+        self.control_count += 1
 
 
 
