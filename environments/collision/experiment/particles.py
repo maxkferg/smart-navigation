@@ -18,6 +18,7 @@ class RealObject(Particle):
     Follows the particle API from simulation
     """
     mass = 1 # For API compatability
+    elasticity = 1
     control_count = 0
 
     def __init__(self,size,color,name="car"):
@@ -57,6 +58,16 @@ class RealObject(Particle):
             input("Press enter to continue")
         # Now execute the control
         steering = -steering # Real steering is reversed to simulation
+
+        if throttle > 0 and throttle < 0.2:
+            throttle += 0.2
+
+        if throttle > 0 and throttle < 0.3:
+            throttle += 0.1
+
+        if throttle < 0 and throttle > -0.2:
+            throttle -= 0.1
+
         control_car(rotation=steering, throttle=throttle)
         time.sleep(0.1)
         control_car(rotation=steering, throttle=0, reset=True)
