@@ -54,22 +54,19 @@ class RealObject(Particle):
 
 
     def control(self, steering, throttle):
-        if self.control_count % 5 ==0:
+        if self.control_count % 6 ==0:
             input("Press enter to continue")
         # Now execute the control
         steering = -steering # Real steering is reversed to simulation
 
-        if throttle > 0 and throttle < 0.2:
-            throttle += 0.2
+        if throttle > 0:
+            throttle = 0.3 + 0.7*throttle
 
-        if throttle > 0 and throttle < 0.3:
-            throttle += 0.1
-
-        if throttle < 0 and throttle > -0.2:
-            throttle -= 0.1
+        if throttle < 0:
+            throttle = -0.2 - 0.8*throttle
 
         control_car(rotation=steering, throttle=throttle)
-        time.sleep(0.1)
+        time.sleep(0.15)
         control_car(rotation=steering, throttle=0, reset=True)
         self.control_count += 1
 
