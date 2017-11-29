@@ -17,6 +17,8 @@ class RealObject(Particle):
     A real object we are tracking in the environment
     Follows the particle API from simulation
     """
+    mass = 1 # For API compatability
+    control_count = 0
 
     def __init__(self,size,color,name="car"):
         self.x = 0
@@ -51,6 +53,9 @@ class RealObject(Particle):
 
 
     def control(self, steering, throttle):
+        if self.control_count % 5 ==0:
+            input("Press enter to continue")
+        # Now execute the control
         steering = -steering # Real steering is reversed to simulation
         choice = input("Execute steering: %.3f throttle %.3f?"%(steering,throttle))
         if choice == "y":
