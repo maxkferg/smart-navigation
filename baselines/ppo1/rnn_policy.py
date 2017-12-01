@@ -5,7 +5,7 @@ import gym
 import numpy as np
 import gym.spaces
 from baselines.common.distributions import make_pdtype
-from tensorflow.contrib.rnn import BasicRNNCell
+from tensorflow.contrib.rnn import GRUCell
 from tensorflow.contrib.rnn import static_rnn
 
 
@@ -80,13 +80,13 @@ class RnnPolicy(object):
         x = tf.unstack(obz, num=rnn_history_steps, axis=1)
 
         # 1-layer Basic Cell with n_hidden units.
-        cell = BasicRNNCell(rnn_hid_units)
+        cell = GRUCell(rnn_hid_units)
 
         # generate prediction
         outputs, states = static_rnn(cell, x, dtype=tf.float32)
 
         # We only return the last output
-        return outputs[-1]
+        return outputs[-1] # Get the last tuple, and take the output component
 
     def value(self, stochastic, ob):
         """

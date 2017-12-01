@@ -207,9 +207,10 @@ class Universe:
         xi = math.floor( particle.x / self.width * self.discretization)
         yi = math.floor( particle.y / self.height * self.discretization)
 
-        if self.penalties[yi,xi]==0:
-            return True
-        return False
+        try:
+            return self.penalties[yi,xi]==0
+        except IndexError:
+            return False
 
 
     def findParticle(self, x, y):

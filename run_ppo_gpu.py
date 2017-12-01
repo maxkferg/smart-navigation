@@ -9,7 +9,7 @@ from environments.collision.environment import ExecuteEnvironment
 from environments.collision.environment import LearningEnvironment
 
 
-ENVIRONMENTS = 128
+ENVIRONMENTS = 6
 PARTICLES = 2
 TIMESTEPS = 2e7
 DIRECTORY = 'results/ppo-gpu'
@@ -17,9 +17,8 @@ DIRECTORY = 'results/ppo-gpu'
 
 def train(env_id, num_timesteps, seed, render):
     from baselines.common import set_global_seeds
-    from baselines.common.vec_env.vec_normalize import VecNormalize
     from baselines.ppo2 import ppo2
-    from baselines.ppo2.policies import PureLstmPolicy
+    from baselines.ppo2.policies import DynamicLstmPolicy
     from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 
     ncpu = multiprocessing.cpu_count()
@@ -40,8 +39,8 @@ def train(env_id, num_timesteps, seed, render):
     env = SubprocVecEnv([make_env(i) for i in range(ENVIRONMENTS)])
 
     set_global_seeds(seed)
-    policy = PureLstmPolicy
-    ppo2.learn(policy=policy, env=env, nsteps=100, nminibatches=32,
+    policy = DynamicLstmPolicy
+    ppo2.learn(policy=policy, env=env, nsteps=1000, nminibatches=3,
         lam=0.95, gamma=0.99, noptepochs=10, log_interval=1,
         save_interval=10,
         ent_coef=0.002,

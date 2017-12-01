@@ -13,7 +13,9 @@ from mpi4py import MPI
 
 PARTICLES = 2
 TIMESTEPS = 5e7 #3e7
-DIRECTORY = 'results/ppo-resnet'
+DIRECTORY = 'results/ppo-dynamics'
+HISTORY_LEN = 8 # Take the last 8 steps of history
+VAR_REDUCTION = 16 # Good for 4 core processor
 
 logger.configure(dir=DIRECTORY)
 
@@ -31,16 +33,17 @@ def train(env_id, num_timesteps, seed, render):
     set_global_seeds(workerseed)
 
     train_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-    train_env = StackedEnvWrapper(train_env, state_history_len=4)
+    train_env = StackedEnvWrapper(train_env, state_history_len=HISTORY_LEN)
 
     eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-    eval_env = StackedEnvWrapper(eval_env, state_history_len=4)
+    eval_env = StackedEnvWrapper(eval_env, state_history_len=HISTORY_LEN)
     eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), "monitor.json"))
+
 
     pposgd_simple.learn(train_env, eval_env, policy_fn,
             directory=DIRECTORY,
             max_timesteps=num_timesteps,
-            timesteps_per_batch=2048,
+            timesteps_per_batch=1024*VAR_REDUCTION,
             clip_param=0.2,
             entcoeff=0.001,
             optim_epochs=10,
@@ -56,7 +59,7 @@ def evaluate(env_id, render):
     """Evaluate the policy in the simulation"""
     U.make_session(num_cpu=4).__enter__()
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-    env = StackedEnvWrapper(env, state_history_len=4)
+    env = StackedEnvWrapper(env, state_history_len=HISTORY_LEN)
     pposgd_simple.run_evaluation(env, policy_fn, directory=DIRECTORY, render=render)
     env.close()
 

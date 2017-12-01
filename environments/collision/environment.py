@@ -388,6 +388,16 @@ class HumanLearningEnvironment(LearningEnvironment):
     Overide base class to allow human control
     """
 
+    def reset(self,*args,**kwargs):
+        """
+        Print the environment dynamics on reset
+        """
+        state = super().reset(*args,**kwargs)
+        print("Steering sensitivity",self.primary.steering_sensitivity)
+        print("Acceleration sensitivity",self.primary.acceleration_sensitivity)
+        return state
+
+
     def control_loop(self):
         """
         Return a user selected action

@@ -7,9 +7,11 @@ import matplotlib
 from .utils import addVectors, pol2cart
 from .utils import normalizeAngle
 
-MAX_SPEED = 1.4 # Maximum simulation speed
-STEERING_SENSITIVITY = 0.4 # Radians I rotate at speed=1 and steering=1
-ACCELERATION_SENSITIVITY = 0.6 # The amount I speed up at full throttle
+MAX_SPEED = 1.5 # Maximum simulation speed
+STEERING_SENSITIVITY_MIN = 0.2 # Radians I rotate at speed=1 and steering=1
+STEERING_SENSITIVITY_MAX = 0.5 # Radians I rotate at speed=1 and steering=1
+ACCELERATION_SENSITIVITY_MIN = 0.3 # The amount I speed up at full throttle
+ACCELERATION_SENSITIVITY_MAX = 0.8 # The amount I speed up at full throttle
 PIXELS_PER_SPEED = 40 # The pixels travelled at speed = 1
 ADVERSARY_SPEED = 0.2
 
@@ -30,8 +32,8 @@ class Particle:
     """ A circular object with a velocity, size and mass """
     collisions = 0
     control_signal = (0,0)
-    steering_sensitivity = STEERING_SENSITIVITY
-    acceleration_sensitivity = ACCELERATION_SENSITIVITY
+    steering_sensitivity = STEERING_SENSITIVITY_MIN
+    acceleration_sensitivity = ACCELERATION_SENSITIVITY_MIN
 
     def __init__(self, position, size, target=None, mass=1, elasticity=0.8, speed=0, backend='simulation', name="default", ghost=False):
         (x, y) = position
@@ -77,8 +79,8 @@ class Particle:
 
     def reset(self):
         """Reset the particul dynamics"""
-        self.steering_sensitivity = max(np.random.normal(loc=STEERING_SENSITIVITY, scale=0.1*STEERING_SENSITIVITY), 0.1)
-        self.acceleration_sensitivity = max(np.random.normal(loc=ACCELERATION_SENSITIVITY, scale=0.1*ACCELERATION_SENSITIVITY), 0.1)
+        self.steering_sensitivity = np.random.uniform(STEERING_SENSITIVITY_MIN, STEERING_SENSITIVITY_MAX)
+        self.acceleration_sensitivity = np.random.uniform(ACCELERATION_SENSITIVITY_MIN, ACCELERATION_SENSITIVITY_MAX)
 
 
     def move(self):
@@ -95,8 +97,8 @@ class Particle:
     def move_adversary(self):
         """Move randomly in a correlated manner"""
         if self.name not in ["primary","ghost"]:
-            self.speed = ADVERSARY_SPEED + 0.1 * random.random()
-            self.angle += STEERING_SENSITIVITY * random.uniform(-1,1)
+            self.speed = self.acceleration_sensitivity + 0.1 * random.random()
+            self.angle += self.steering_sensitivity * random.uniform(-1,1)
             self.speed = np.clip(self.speed, 0, MAX_SPEED)
             self.angle = np.clip(self.angle, 0, 2*math.pi)
 
