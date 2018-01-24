@@ -1,6 +1,7 @@
 import sys
 import math
 import time
+import scipy
 import random
 import pygame
 import pygame.gfxdraw
@@ -21,8 +22,10 @@ import seaborn as sns; sns.set()
 
 
 class Spec:
-    id = "simple-environment"
-    timestep_limit = 100
+    id = "collision-environment"
+    map_file = "environments/hospital/maps/room.png"
+    particle_size = 60
+    timestep_limit = 200
 
 
 def clip(val, minimum, maximum):
@@ -62,106 +65,121 @@ class Environment:
     """
     Environment that an algorithm can play with
     """
-    reward_range = [-1,1]
+    reward_range = [-2,1]
     action_dimensions = 2
-    state_dimensions = 5 # The number of dimensions per particle (x,y,theta,tx,ty)
+    state_dimensions = 6 # The number of dimensions per particle (x,y,theta,v,tx,ty)
     max_steps = 100
+    current_actor = 0
 
     spec = Spec()
     screen = None
     particle_speed = 20
-    screen_width = 800
-    screen_height = 800
     metadata = {
         'render.modes':['human']
     }
 
 
-    def __init__(self, primary, num_particles, particle_size, disable_render):
+    def __init__(self, primary, num_particles, disable_render):
         """
         @history: A vector where each row is a previous state
         """
+
         self.current_step = 0
         self.reward_so_far = 0
-        self.num_particles = 1 # This environment only works with one particle
-        self.state_size = self.num_particles*self.state_dimensions + self.action_dimensions
+        self.num_particles = num_particles
+        self.state_size = num_particles*self.state_dimensions + self.action_dimensions
         self.observation_space = ObservationSpace(-1, 1, shape=(self.state_size,))
         self.action_space = ActionSpace(-1, 1, self.action_dimensions)
         self.previous_action = np.zeros(self.action_space.shape)
 
-        self.primary = primary
-        self.universe = Universe((self.screen_width, self.screen_height))
-        self.universe.addFunctions(['move', 'bounce', 'collide', 'drag'])
+        self.universe = Universe(scipy.ndimage.imread(self.spec.map_file))
+        self.universe.addFunctions(['move', 'bounce', 'collide', 'drag', 'move_adversary'])
         self.universe.mass_of_air = 0.1
 
-        # Create the primary
-        if primary is not None:
-            self.universe.particles.insert(0,primary)
-        else:
-            name = "primary"
-            speed = self.particle_speed
-            color = get_color(0)
-            target = self.universe.addTarget(radius=particle_size, color=color)
-            particle = self.universe.addParticle(radius=particle_size, mass=100, speed=speed, elasticity=0.5, color=color, target=target, name=name)
-        self.primary = self.universe.particles[0]
+        self.screen_width = self.universe.width
+        self.screen_height = self.universe.height
 
         # Add all the other particles
-        for i in range(1, self.num_particles):
+        for i in range(self.num_particles):
             name = "default"
             speed = self.particle_speed
             color = get_color(i)
-            target = self.universe.addTarget(radius=particle_size, color=color)
-            particle = self.universe.addParticle(radius=particle_size, mass=100, speed=speed, elasticity=0.5, color=color, target=target, name=name)
+            target = self.universe.addTarget(radius=self.spec.particle_size, color=color)
+            particle = self.universe.addParticle(radius=self.spec.particle_size, mass=100, speed=speed, elasticity=0.5, color=color, target=target, name=name)
 
         # Reset the environment to correctly spawn the particles
         self.reset()
         if not disable_render:
-            print('Initializing pygame screen')
+            print('Initializing pygame screen with w=%i and h=%i'%(self.screen_width, self.screen_height))
             self.screen_buffer = pygame.Surface((self.screen_width, self.screen_height))
             self.screen_buffer.set_alpha(50)
             self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-            pygame.display.set_caption('Bouncing Objects')
+            pygame.display.set_caption('Hospital Collision Avoidance')
 
 
-    def step(self, action):
+    def step(self, actions):
         """
         Step the environment forward
         Return (observation, reward, done, info)
         """
-        # We clip the value even if the learning algorithm chooses not to
-        # This should be seen as a last resort, to prevent simulation instability
-        action = clipv(action, self.action_space)
+        for primary,action in zip(self.universe.particles, actions):
+            # We clip the value even if the learning algorithm chooses not to
+            # This should be seen as a last resort, to prevent simulation instability
+            action = clipv(action, self.action_space)
 
-        # Particle 1 is being controlled
-        steering = action[0]
-        throttle = action[1]
-        throttle = max(throttle,0) # No braking allowed
-        self.previous_action = action
-        self.primary.control(steering, throttle)
+            # Particle 1 is being controlled
+            steering = action[0]
+            throttle = action[1]
+            primary.previous_action = action
+            primary.control(steering, throttle)
 
-        # Step forward one timestep
+            # Update our primary positions
+            primary.update()
+            primary.target.update()
+
+        # Update the universe now all the actors have registred their moves
         self.universe.update()
-
-        # Update our primary positions
-        self.primary.update()
-        self.primary.target.update()
-
-        # Calculate the current state
-        state = self.get_current_state()
         self.current_step += 1
 
-        if self.primary.atTarget(threshold=50) and self.primary.speed<0.1:
-            reward = 1
-            done = True
-        elif self.primary.collisions > 0:
-            reward = 0
-            done = True
-        else:
-            reward = 0
-            done = self.current_step >= self.max_steps
+        states = []
+        rewards = []
+        is_done = False
+
+        for primary,action in zip(self.universe.particles, actions):
+            # Calculate the current state
+            state = self.get_current_state(primary)
+
+            if primary.atTarget(threshold=10) and primary.speed<0.5:
+                self.universe.resetTarget(primary.target)
+                reward = 1
+                done = False
+            elif primary.collisions > 0:
+                reward = -1
+                done = True
+            elif self.universe.is_on_occupied(primary):
+                reward = -1
+                done = True
+            else:
+                reward = 0
+                done = self.current_step >= self.max_steps
+
+            # Enforce speed limits
+            if abs(primary.speed) > 1:
+                reward -= 0.01
+
+            if any(np.absolute(action) > 0.8):
+                reward -= 0.01
+
+            # Enforce penalty regions
+            if self.universe.is_on_restricted(primary):
+                reward -= 0.1
+
+            states.append(state)
+            rewards.append(reward)
+            is_done = is_done or done
 
         info = {'step': self.current_step}
-        return state, reward, done, info
+        return (states, rewards, is_done, info)
 
 
     def reset(self, catastrophy=False):
@@ -170,13 +188,11 @@ class Environment:
 
         self.state_buffer = []
 
-        self.primary.speed = 0
-
         self.current_step = 0
 
         self.reward_so_far = 0
 
-        return self.get_current_state()
+        return [self.get_current_state(p) for p in self.universe.particles]
 
 
     def render(self, mode=None, close=None, background=None):
@@ -187,7 +203,7 @@ class Environment:
         if background is not None:
             pixelcopy.array_to_surface(self.screen, background)
         else:
-            self.screen.fill(self.universe.color)
+            pixelcopy.array_to_surface(self.screen, self.universe.map)
 
         # Draw particles
         for p in self.universe.particles:
@@ -195,9 +211,9 @@ class Environment:
             self.draw_circle(int(p.x), int(p.y), p.radius, p.color, edgeColor=edge, filled=True)
 
         # Draw primary target
-        t = self.primary.target
-        self.draw_circle(int(t.x), int(t.y), t.radius, t.color, filled=False)
-        self.draw_circle(int(t.x), int(t.y), int(t.radius/4), t.color, filled=True)
+        for t in self.universe.targets:
+            self.draw_circle(int(t.x), int(t.y), t.radius, t.color, filled=False)
+            self.draw_circle(int(t.x), int(t.y), int(t.radius/4), t.color, filled=True)
 
         # Draw the primary particle orientation
         for p in self.universe.particles:
@@ -258,16 +274,21 @@ class Environment:
 
 
 
-    def get_current_state(self):
+    def get_current_state(self,primary):
         """
-        Return a representation of the simulation state
+        Return a representation of the simulation state, from the perspective of @primary
         The return array is size (self.state_history, self.state_size)
         """
-        # Get the current state vector
-        state = []
-        for i,particle in enumerate(self.universe.particles):
+        otherParticles = set(self.universe.particles)
+        otherParticles.remove(primary)
+
+        # Get the current state vector for this particle
+        state = list(primary.get_state_vector(self.screen_width, self.screen_height))
+
+        for particle in otherParticles:
             state.extend(particle.get_state_vector(self.screen_width, self.screen_height))
-        state.extend(self.previous_action)
+
+        state.extend(primary.previous_action)
 
         return np.array(state)
 
@@ -286,8 +307,8 @@ class LearningEnvironment(Environment):
     - The target is simulated and randomly spawned
     @locus: The RL training computer
     """
-    def __init__(self, num_particles=1, particle_size=80, *args, **kwargs):
-        super().__init__(None, num_particles, particle_size, *args, **kwargs)
+    def __init__(self, num_particles=2, *args, **kwargs):
+        super().__init__(None, num_particles, *args, **kwargs)
 
 
 
@@ -299,7 +320,7 @@ class ExecuteEnvironment(Environment):
     - The target position is pulled from the database
     @locus: The Real Car
     """
-    def __init__(self, num_particles=1, particle_size=80, *args, **kwargs):
+    def __init__(self, num_particles=2, *args, **kwargs):
         primary = RealObject(particle_size, color=get_color(0), name="Real Car")
         primary.target = RealTarget(particle_size, color=get_color(0), name="Real Car Target")
         super().__init__(primary, num_particles, particle_size, *args, **kwargs)
@@ -321,7 +342,7 @@ class ViewingEnvironment(Environment):
     - The primary object is the real car
     - The primary target is pulled from the database
     """
-    def __init__(self, num_particles=1, particle_size=80, *args, **kwargs):
+    def __init__(self, num_particles=2, *args, **kwargs):
         primary = RealObject(particle_size, color=get_color(0), name="Real Car")
         primary.target = RealTarget(particle_size, color=get_color(0), name="Real Car Target")
         super().__init__(primary, num_particles, particle_size, *args, **kwargs)
@@ -353,11 +374,9 @@ class HumanLearningEnvironment(LearningEnvironment):
         """
         Print the environment dynamics on reset
         """
-        state = super().reset(*args,**kwargs)
-        print("Particle radius:",self.primary.radius)
-        print("Particle drag:",self.primary.drag)
-        print("Steering sensitivity:",self.primary.steering_sensitivity)
-        print("Acceleration sensitivity:",self.primary.acceleration_sensitivity)
+        state = super().reset(*args, **kwargs)
+        #print("Steering sensitivity",self.primary.steering_sensitivity)
+        #print("Acceleration sensitivity",self.primary.acceleration_sensitivity)
         return state
 
 
@@ -378,7 +397,7 @@ class HumanLearningEnvironment(LearningEnvironment):
                     if event.key == pygame.K_d:
                         action = [0.9, 0.5]
                     if event.key == pygame.K_s:
-                        action = [0, 0]
+                        action = [0, -0.5]
                     if event.key == pygame.K_a:
                         action = [-0.9, 0.5]
         return np.array(action)

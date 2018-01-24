@@ -8,17 +8,6 @@ from baselines.common.distributions import make_pdtype
 from tensorflow.contrib.rnn import GRUCell
 from tensorflow.contrib.rnn import static_rnn
 
-
-def resnet(inputs, hid_size, name):
-    x = U.dense(inputs, hid_size, "%s_dense1"%name, weight_init=U.normc_initializer(1.0))
-    #x = tf.contrib.layers.batch_norm(x)
-    x = tf.nn.relu(x)
-    x = U.dense(x, hid_size, "%s_dense2"%name, weight_init=U.normc_initializer(1.0))
-    #x = tf.contrib.layers.batch_norm(x)
-    x = tf.nn.relu(x+inputs)
-    return x
-
-
 class RnnPolicy(object):
     recurrent = False
     def __init__(self, name, *args, **kwargs):
@@ -28,39 +17,29 @@ class RnnPolicy(object):
 
     def _init(self, ob_space, ac_space, hid_size, num_hid_layers, rnn_hid_units, gaussian_fixed_var=True):
         #assert isinstance(ob_space, gym.spaces.Box)
-        print("Constructing policy for observation space",ob_space)
 
         self.pdtype = pdtype = make_pdtype(ac_space)
         sequence_length = None
 
         ob = U.get_placeholder(name="ob", dtype=tf.float32, shape=[sequence_length] + list(ob_space.shape))
 
-        #with tf.variable_scope("obfilter"):
-        #    self.ob_rms = RunningMeanStd(shape=ob_space.shape)
-
-        #obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
-        obz = ob
-
         # Apply rnn_to reduce history
         with tf.variable_scope("vf"):
-            state = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
+            last_out = self.rnn(ob, ob_space.shape[0], rnn_hid_units)
             for i in range(num_hid_layers):
-                last_out = resnet(state, hid_size, "vf%i"%(i+1))
+                last_out = U.dense(last_out, hid_size, "vf_dense%i"%i, weight_init=U.normc_initializer(1.0))
             self.vpred = U.dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:,0]
 
         # Apply rnn_to reduce history
         with tf.variable_scope("pf"):
-            state = self.rnn(obz, ob_space.shape[0], rnn_hid_units)
+            last_out = self.rnn(ob, ob_space.shape[0], rnn_hid_units)
             for i in range(num_hid_layers):
-                last_out = resnet(state, hid_size, "pf%i"%(i+1))
+                last_out = U.dense(last_out, hid_size, "pf_dense%i"%i, weight_init=U.normc_initializer(1.0))
 
-            if gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box):
-                mean = U.dense(last_out, pdtype.param_shape()[0]//2, "polfinal", U.normc_initializer(0.01))
-                logstd = tf.get_variable(name="logstd", shape=[1, pdtype.param_shape()[0]//2], initializer=tf.zeros_initializer())
-                pdparam = U.concatenate([mean, mean * 0.0 + logstd], axis=1)
-            else:
-                raise
-                pdparam = U.dense(last_out, pdtype.param_shape()[0], "polfinal", U.normc_initializer(0.01))
+            assert gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box)
+            mean = U.dense(last_out, pdtype.param_shape()[0]//2, "polfinal", U.normc_initializer(0.01))
+            logstd = tf.get_variable(name="logstd", shape=[1, pdtype.param_shape()[0]//2], initializer=tf.zeros_initializer())
+            pdparam = U.concatenate([mean, mean * 0.0 + logstd], axis=1)
 
         self.pd = pdtype.pdfromflat(pdparam)
 

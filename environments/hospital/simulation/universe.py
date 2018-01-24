@@ -1,21 +1,32 @@
 import copy
+import itertools
 import numpy as np
 import math, random
-import matplotlib
+import matplotlib.pyplot as plt
+from skimage.draw import circle
 from .targets import Target
 from .particles import Particle
 from .utils import addVectors, normalizeAngle
 
 
 
+def corners(x,y,r):
+    """Return the corners of a square with center (x,y) and radius r"""
+    x = int(x)
+    y = int(y)
+    r = int(r)
+    rr = [y-r, y+r, y-r, y+r]
+    cc = [x-r, x-r, x+r, x+r]
+    return rr,cc
+
 
 class Universe:
     """ Defines the boundary of a simulation and its properties """
 
-    def __init__(self, size, discretization=5):
-        (width, height) = size
-        self.width = width
-        self.height = height
+    def __init__(self, map, discretization=5):
+        self.map = map
+        self.width = self.map.shape[0]
+        self.height = self.map.shape[1]
         self.targets = []
         self.particles = []
         self.springs = []
@@ -32,11 +43,24 @@ class Universe:
             'bounce': (1, lambda p: self.bounce(p)),
             'collide': (2, lambda p1, p2: self.collide(p1, p2)),
             'combine': (2, lambda p1, p2: combine(p1, p2)),
-            'move_adversary': (1, lambda p: p.move_adversary()),
         }
 
-        self.penalties = np.ones((discretization,discretization))
-        self.discretization = discretization
+        self.restricted = np.logical_and(self.map[:,:,0] > 200, self.map[:,:,1] < 200)
+        self.available  = np.logical_and(self.map[:,:,1] > 200, self.map[:,:,0] < 200)
+        self.occupied = np.logical_not(np.logical_or(self.restricted, self.available))
+        self.spawn = np.copy(self.available)
+
+        """
+        plt.imshow(self.restricted)
+        plt.grid(False)
+        plt.title("Restricted")
+        plt.show()
+
+        plt.imshow(self.available)
+        plt.grid(False)
+        plt.title("Available")
+        plt.show()
+        """
 
 
     def addFunctions(self, function_list):
@@ -62,11 +86,12 @@ class Universe:
         x = kargs.get('x', random.uniform(size, self.width - size))
         y = kargs.get('y', random.uniform(size, self.height - size))
 
-        particle = Particle((x, y), size, target=target, mass=mass, name=name, backend=backend, ghost=ghost, mass_of_air=self.mass_of_air)
+        particle = Particle((x, y), size, target=target, mass=mass, name=name, backend=backend, ghost=ghost)
         particle.speed = kargs.get('speed', random.random())
         particle.angle = kargs.get('angle', random.uniform(0, math.pi*2))
         particle.color = kargs.get('color', (0,0,0))
         particle.elasticity = kargs.get('elasticity', self.elasticity)
+        particle.drag = (particle.mass/(particle.mass + self.mass_of_air)) ** particle.size
 
         self.particles.append(particle)
 
@@ -74,32 +99,46 @@ class Universe:
     def addTarget(self, radius, color):
         """Add a target for the particles to reach"""
         target = Target((0,0), radius, color)
-        target.respawn(self.width, self.height)
         self.targets.append(target)
+        self.resetTarget(target)
         return target
 
 
-    def _get_grid_cell_bounds(self, xi, yi):
-        """Return the pixel bounds of one of the grid cells"""
-        xmin = xi / self.discretization * self.width
-        xmax = (xi+1) / self.discretization * self.width
-        ymin = yi / self.discretization * self.height
-        ymax = (yi+1) / self.discretization * self.height
+    def resetTarget(self, target):
+        """Reset the position of a target. Choose a reasonble target position"""
+        otherTargets = set(self.targets)
+        otherTargets.remove(target)
 
-        return (int(xmin), int(xmax), int(ymin), int(ymax))
+        while True:
+            target.x = random.uniform(target.radius, self.width-target.radius)
+            target.y = random.uniform(target.radius, self.height-target.radius)
+
+            # Compute distances to all other targets
+            dists = np.array([(o.x-target.x)**2 + (o.y-target.y)**2 for o in otherTargets])
+            thresholds = np.array([(o.radius + target.radius)**2 for o in otherTargets])
+
+            if len(dists) and any(dists<thresholds):
+                continue
+
+            if not self.is_on_occupied(target) and not self.is_on_restricted(target):
+                return
 
 
     def reset(self):
-        particle = self.particles[0]
-        particle.reset()
-        particle.x = 100
-        particle.y = 400
-        particle.speed = 0
-        particle.collisions = 0
+        while True:
+            for particle in self.particles:
+                particle.reset()
+                particle.x = random.uniform(0+particle.size, self.width-particle.size)
+                particle.y = random.uniform(0+particle.size, self.height-particle.size)
 
-        target = self.particles[0].target
-        target.x = 600
-        target.y = 400
+            for target in self.targets:
+                self.resetTarget(target)
+
+            if not any(self.is_on_restricted(p) for p in self.particles) and \
+                not any(self.is_on_restricted(p) for p in self.particles) and \
+                not any(self.is_on_occupied(t) for t in self.targets) and \
+                not any(self.is_on_restricted(t) for t in self.targets):
+                break
 
 
     def update(self):
@@ -173,13 +212,22 @@ class Universe:
             p1.collisions += 1
             p2.collisions += 1
 
-    def isOnPenalty(self, particle):
-        # Find discretized position
-        xi = math.floor( particle.x / self.width * self.discretization)
-        yi = math.floor( particle.y / self.height * self.discretization)
+
+    def is_on_restricted(self, particle):
+        """Return True if the particle is on occupied space or exceeds the map bounds"""
 
         try:
-            return self.penalties[yi,xi]==0
+            rr, cc = corners(particle.x, particle.y, particle.radius)
+            return bool(any(self.restricted[cc,rr]))
+        except IndexError:
+            return False
+
+
+    def is_on_occupied(self, particle):
+        """Return True if the particle is on occupied space or exceeds the map bounds"""
+        try:
+            rr, cc = corners(particle.x, particle.y, particle.radius)
+            return bool(any(self.occupied[cc,rr]))
         except IndexError:
             return False
 

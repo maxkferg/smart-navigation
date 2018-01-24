@@ -8,13 +8,11 @@ from .utils import addVectors, pol2cart
 from .utils import normalizeAngle
 
 MAX_SPEED = 1.5 # Maximum simulation speed
-STEERING_SENSITIVITY_MIN = 0.001
-STEERING_SENSITIVITY_MAX = 0.003
-ACCELERATION_SENSITIVITY_MIN = 0.1 # The amount I speed up at full throttle
-ACCELERATION_SENSITIVITY_MAX = 0.9 # The amount I speed up at full throttle
-RADIUS_MIN = 10 # Particle radius max - effects drag
-RADIUS_MAX = 50 # Particle radius max - effects drag
-PIXELS_PER_SPEED = 40 # The pixels travelled at speed = 1
+STEERING_SENSITIVITY_MIN = 1 # Radians I rotate at speed=1 and steering=1
+STEERING_SENSITIVITY_MAX = 2 # Radians I rotate at speed=1 and steering=1
+ACCELERATION_SENSITIVITY_MIN = 0.3 # The amount I speed up at full throttle
+ACCELERATION_SENSITIVITY_MAX = 0.8 # The amount I speed up at full throttle
+PIXELS_PER_SPEED = 20 # The pixels travelled at speed = 1
 ADVERSARY_SPEED = 0.2
 
 
@@ -34,16 +32,16 @@ class Particle:
     """ A circular object with a velocity, size and mass """
     collisions = 0
     control_signal = (0,0)
+    previous_action = (0,0)
     steering_sensitivity = STEERING_SENSITIVITY_MIN
     acceleration_sensitivity = ACCELERATION_SENSITIVITY_MIN
 
-    def __init__(self, position, size, target=None, mass=1, elasticity=0.8, speed=0, backend='simulation', name="default", ghost=False, mass_of_air=0):
+    def __init__(self, position, size, target=None, mass=1, elasticity=0.8, speed=0, backend='simulation', name="default", ghost=False):
         (x, y) = position
         self.x = x
         self.y = y
         self.size = size
         self.radius = int(size/2)
-        self.mass_of_air = mass_of_air
         self.color = (0, 0, 255)
         self.thickness = 0
         self.angle = 0
@@ -64,7 +62,6 @@ class Particle:
         copy = Particle(position, size=self.size)
         copy.size = self.size
         copy.color = self.color
-        copy.mass_of_air = self.mass_of_air
         copy.thickness = self.thickness
         copy.angle = self.angle
         copy.speed = self.speed
@@ -82,16 +79,10 @@ class Particle:
 
 
     def reset(self):
-        """Reset the particul dynamics"""
-        self.angle = math.pi/2
+        """Reset the partical dynamics"""
+        self.collisions = 0
         self.steering_sensitivity = np.random.uniform(STEERING_SENSITIVITY_MIN, STEERING_SENSITIVITY_MAX)
         self.acceleration_sensitivity = np.random.uniform(ACCELERATION_SENSITIVITY_MIN, ACCELERATION_SENSITIVITY_MAX)
-        self.radius = int(np.random.uniform(RADIUS_MIN, RADIUS_MAX))
-        self.size = 2*self.radius # Drag is inversely proportional to size
-        self.drag = (self.mass/(self.mass + self.mass_of_air)) ** self.size
-        #print("Acceleration Sensitivity",self.acceleration_sensitivity)
-        #print("Drag",self.drag)
-
 
 
     def move(self):
@@ -137,6 +128,7 @@ class Particle:
         return (
             self.x / w,
             self.y / h,
+            self.speed,
             self.angle / (2 * math.pi),
             self.target.x / w,
             self.target.y / h
@@ -152,6 +144,8 @@ class Particle:
         self.speed += throttle * self.acceleration_sensitivity
         self.control_signal = (steering,throttle)
 
+        if abs(self.speed) > MAX_SPEED:
+            self.speed = math.copysign(MAX_SPEED, self.speed)
 
 
 

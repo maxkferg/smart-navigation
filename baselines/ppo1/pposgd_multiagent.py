@@ -48,45 +48,56 @@ def traj_segment_generator(pi, env, horizon, stochastic, catastrophy=0):
     ep_lens = [] # lengths of ...
 
     # Initialize history arrays
-    obs = np.array([ob for _ in range(horizon)])
-    rews = np.zeros(horizon, 'float32')
-    vpreds = np.zeros(horizon, 'float32')
+    n_actors = len(ob)
+    obs = [np.array([ob[0] for _ in range(horizon)]) for _ in range(n_actors)] # Observations over the entire horizon
+    rews = [np.zeros(horizon, 'float32') for _ in range(n_actors)]
+    vpreds = [np.zeros(horizon, 'float32') for _ in range(n_actors)]
+    acs =     [np.array([ac for _ in range(horizon)]) for _ in range(n_actors)]
+    prevacs = [np.array([ac for _ in range(horizon)]) for _ in range(n_actors)]
     news = np.zeros(horizon, 'int32')
-    acs = np.array([ac for _ in range(horizon)])
-    prevacs = acs.copy()
+
+    # Get ac into the right form
+    ac = [ac for _ in range(n_actors)]
+    prevac = ac.copy()
+    vpred = list(range(len(ac)))
 
     while True:
-        prevac = ac
-        ac, vpred = pi.act(stochastic, ob)
+
+        for actor, state in enumerate(ob):
+            prevac[actor] = ac[actor]
+            ac[actor], vpred[actor] = pi.act(stochastic, state)
         # Slight weirdness here because we need value function at time T
         # before returning segment [0, T-1] so we get the correct
         # terminal value
         if t > 0 and t % horizon == 0:
-            yield {"ob" : obs, "rew" : rews, "vpred" : vpreds, "new" : news,
-                    "ac" : acs, "prevac" : prevacs, "nextvpred": vpred * (1 - new),
-                    "ep_rets" : ep_rets, "ep_lens" : ep_lens}
-            # Be careful!!! if you change the downstream algorithm to aggregate
-            # several of these batches, then be sure to do a deepcopy
+            for actor in range(n_actors):
+                yield {"ob" : obs[actor], "rew" : rews[actor], "vpred" : vpreds[actor], "new" : news,
+                        "ac" : acs[actor], "prevac" : prevacs[actor], "nextvpred": vpred[actor] * (1 - new),
+                        "ep_rets" : ep_rets, "ep_lens" : ep_lens}
+                # Be careful!!! if you change the downstream algorithm to aggregate
+                # several of these batches, then be sure to do a deepcopy
             ep_rets = []
             ep_lens = []
         i = t % horizon
-        obs[i] = ob
-        vpreds[i] = vpred
-        news[i] = new
-        acs[i] = ac
-        prevacs[i] = prevac
+        for actor in range(len(ob)):
+            obs[actor][i] = ob[actor]
+            vpreds[actor][i] = vpred[actor]
+            acs[actor][i] = ac[actor]
+            prevacs[actor][i] = prevac[actor]
+            news[i] = new
 
         ob, rew, new, _ = env.step(ac)
-        rews[i] = rew
 
-        cur_ep_ret += rew
+        for j in range(len(rew)):
+            rews[actor][i] = rew[j]
+        cur_ep_ret += np.mean(rew)
         cur_ep_len += 1
+
         if new:
             ep_rets.append(cur_ep_ret)
             ep_lens.append(cur_ep_len)
             cur_ep_ret = 0
             cur_ep_len = 0
-            cat = random.random()<catastrophy
             ob = env.reset()
         t += 1
 
@@ -272,14 +283,14 @@ def evaluate(env, pi, render):
     ob = env.reset()
     reward = 0
     while not done:
-        ac, vpred = pi.act(stochastic, ob)
+        actions_and_vpred = [pi.act(stochastic, state) for state in ob]
+        ac, vpred = zip(*actions_and_vpred)
         ob, rew, done, _ = env.step(ac)
-        reward += rew
-        print('V:',vpred, 'Reward:', rew, 'A:',ac[0],ac[1])
+        reward += np.mean(rew)
+        print('V: {0:3.1f} Reward: {1:3.1f} Amax:{2:3.1f}'.format(np.mean(vpred), np.mean(rew), np.max(ac)))
         if render:
-            background = get_v_background(env, pi, stochastic)
-            env.render(background=background)
-            time.sleep(0.04)
+            #background = get_v_background(env, pi, stochastic)
+            env.render()#background=background)
     return reward
 
 
