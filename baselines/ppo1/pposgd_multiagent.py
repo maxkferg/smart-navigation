@@ -291,6 +291,7 @@ def evaluate(env, pi, render):
         if render:
             #background = get_v_background(env, pi, stochastic)
             env.render()#background=background)
+            time.sleep(0.1)
     return reward
 
 

@@ -117,69 +117,64 @@ class Environment:
             pygame.display.set_caption('Hospital Collision Avoidance')
 
 
-    def step(self, actions):
+    def step(self, action):
         """
         Step the environment forward
         Return (observation, reward, done, info)
         """
-        for primary,action in zip(self.universe.particles, actions):
-            # We clip the value even if the learning algorithm chooses not to
-            # This should be seen as a last resort, to prevent simulation instability
-            action = clipv(action, self.action_space)
+        #for primary,action in zip(self.universe.particles, actions):
+        primary = self.universe.particles[0]
+        primary.name = "primary"
 
-            # Particle 1 is being controlled
-            steering = action[0]
-            throttle = action[1]
-            primary.previous_action = action
-            primary.control(steering, throttle)
+        # We clip the value even if the learning algorithm chooses not to
+        # This should be seen as a last resort, to prevent simulation instability
+        action = clipv(action, self.action_space)
 
-            # Update our primary positions
-            primary.update()
-            primary.target.update()
+        # Particle 1 is being controlled
+        steering = action[0]
+        throttle = action[1]
+        primary.previous_action = action
+        primary.control(steering, throttle)
+
+        # Update our primary positions
+        primary.update()
+        primary.target.update()
 
         # Update the universe now all the actors have registred their moves
         self.universe.update()
         self.current_step += 1
 
-        states = []
-        rewards = []
-        is_done = False
+        #for primary,action in zip(self.universe.particles, actions):
+        # Calculate the current state
+        state = self.get_current_state(primary)
 
-        for primary,action in zip(self.universe.particles, actions):
-            # Calculate the current state
-            state = self.get_current_state(primary)
+        if primary.atTarget(threshold=40) and primary.speed<0.5:
+            self.universe.resetTarget(primary.target)
+            reward = 1
+            done = True
+        elif primary.collisions > 0:
+            reward = -1
+            done = True
+        elif self.universe.is_on_occupied(primary):
+            reward = -1
+            done = True
+        else:
+            reward = 0
+            done = self.current_step >= self.max_steps
 
-            if primary.atTarget(threshold=10) and primary.speed<0.5:
-                self.universe.resetTarget(primary.target)
-                reward = 1
-                done = False
-            elif primary.collisions > 0:
-                reward = -1
-                done = True
-            elif self.universe.is_on_occupied(primary):
-                reward = -1
-                done = True
-            else:
-                reward = 0
-                done = self.current_step >= self.max_steps
+        # Enforce speed limits
+        if abs(primary.speed) > 1:
+            reward -= 0.01
 
-            # Enforce speed limits
-            if abs(primary.speed) > 1:
-                reward -= 0.01
+        if any(np.absolute(action) > 0.8):
+            reward -= 0.01
 
-            if any(np.absolute(action) > 0.8):
-                reward -= 0.01
-
-            # Enforce penalty regions
-            if self.universe.is_on_restricted(primary):
-                reward -= 0.1
-
-            states.append(state)
-            rewards.append(reward)
-            is_done = is_done or done
+        # Enforce penalty regions
+        if self.universe.is_on_restricted(primary):
+            reward -= 0.1
 
         info = {'step': self.current_step}
-        return (states, rewards, is_done, info)
+        return (state, reward, done, info)
 
 
     def reset(self, catastrophy=False):
@@ -192,7 +187,9 @@ class Environment:
 
         self.reward_so_far = 0
 
-        return [self.get_current_state(p) for p in self.universe.particles]
+        p = self.universe.particles[0]
+
+        return self.get_current_state(p)
 
 
     def render(self, mode=None, close=None, background=None):
@@ -200,7 +197,7 @@ class Environment:
         Render the environment
         """
         # Clear the screen
-        if background is not None:
+        if False:#background is not None:
             pixelcopy.array_to_surface(self.screen, background)
         else:
             pixelcopy.array_to_surface(self.screen, self.universe.map)
@@ -211,7 +208,7 @@ class Environment:
             self.draw_circle(int(p.x), int(p.y), p.radius, p.color, edgeColor=edge, filled=True)
 
         # Draw primary target
-        for t in self.universe.targets:
+        for t in self.universe.targets[:1]:
             self.draw_circle(int(t.x), int(t.y), t.radius, t.color, filled=False)
             self.draw_circle(int(t.x), int(t.y), int(t.radius/4), t.color, filled=True)
 

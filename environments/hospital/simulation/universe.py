@@ -43,6 +43,7 @@ class Universe:
             'bounce': (1, lambda p: self.bounce(p)),
             'collide': (2, lambda p1, p2: self.collide(p1, p2)),
             'combine': (2, lambda p1, p2: combine(p1, p2)),
+            'move_adversary': (1, lambda p: p.move_adversary()),
         }
 
         self.restricted = np.logical_and(self.map[:,:,0] > 200, self.map[:,:,1] < 200)
@@ -106,6 +107,11 @@ class Universe:
 
     def resetTarget(self, target):
         """Reset the position of a target. Choose a reasonble target position"""
+        target.x = 240
+        target.y = 450
+        return
+
+
         otherTargets = set(self.targets)
         otherTargets.remove(target)
 

@@ -17,7 +17,7 @@ print("Using tensorflow version: ",tf.__version__)
 PARTICLES = 2
 TIMESTEPS = 8e7 #3e7
 DIRECTORY = 'results/ppo-real/history-len-4'  #%datetime.now().strftime('%a-%d-%bT%H.%M')
-VAR_REDUCTION = 8 # Good for 4 core processor
+VAR_REDUCTION = 1 # Good for 4 core processor
 
 
 def policy_fn(name, ob_space, ac_space):

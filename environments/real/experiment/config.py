@@ -1,10 +1,10 @@
 # Redis
-REDIS_HOST = '10.34.186.39'
+REDIS_HOST = '10.34.179.79'
 REDIS_PORT = 6379
 REDIS_DB = 0
 
 # Graphql
-GRAPHQL_API = "http://10.34.183.170:5000/graphql"
+GRAPHQL_API = "http://10.34.181.4:5000/graphql"
 
 # Camera scale
 CAMERA_SCALE_X = 800/640

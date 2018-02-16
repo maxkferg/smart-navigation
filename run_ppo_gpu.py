@@ -5,8 +5,8 @@ import tensorflow as tf
 import argparse
 import multiprocessing
 from baselines import bench, logger
-from environments.collision.environment import ExecuteEnvironment
-from environments.collision.environment import LearningEnvironment
+from environments.hospital.environment import ExecuteEnvironment
+from environments.real.environment import LearningEnvironment
 
 
 ENVIRONMENTS = 6

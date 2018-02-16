@@ -8,8 +8,8 @@ from .utils import addVectors, pol2cart
 from .utils import normalizeAngle
 
 MAX_SPEED = 1.5 # Maximum simulation speed
-STEERING_SENSITIVITY_MIN = 1 # Radians I rotate at speed=1 and steering=1
-STEERING_SENSITIVITY_MAX = 2 # Radians I rotate at speed=1 and steering=1
+STEERING_SENSITIVITY_MIN = 0.4 # Radians I rotate at speed=1 and steering=1
+STEERING_SENSITIVITY_MAX = 0.8 # Radians I rotate at speed=1 and steering=1
 ACCELERATION_SENSITIVITY_MIN = 0.3 # The amount I speed up at full throttle
 ACCELERATION_SENSITIVITY_MAX = 0.8 # The amount I speed up at full throttle
 PIXELS_PER_SPEED = 20 # The pixels travelled at speed = 1
@@ -89,6 +89,15 @@ class Particle:
         """ Update position based on speed, angle """
         self.x += math.sin(self.angle) * self.speed * PIXELS_PER_SPEED
         self.y -= math.cos(self.angle) * self.speed * PIXELS_PER_SPEED
+
+
+    def move_adversary(self):
+        """Move randomly in a correlated manner"""
+        if self.name not in ["primary","ghost"]:
+            self.speed = self.acceleration_sensitivity + 0.1 * random.random()
+            self.angle += self.steering_sensitivity * random.uniform(-1,1)
+            self.speed = np.clip(self.speed, 0, MAX_SPEED)
+            self.angle = np.clip(self.angle, 0, 2*math.pi)
 
 
     def update(self):

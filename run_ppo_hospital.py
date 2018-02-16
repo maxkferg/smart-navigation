@@ -1,26 +1,28 @@
 #!/usr/bin/env python
 import os, sys
 import gym, logging
+import tensorflow as tf
 from baselines import bench
 from baselines import logger
 from datetime import datetime
-from baselines.ppo1 import pposgd_multiagent
+from baselines.ppo1 import pposgd_simple
 from baselines.common import set_global_seeds, tf_util as U
-from baselines.ppo1.mlp_policy import MlpPolicy
+from baselines.ppo1.rnn_policy import RnnPolicy
 from environments.hospital.environment import ExecuteEnvironment, LearningEnvironment
 from environments.util.stacked_environment import StackedEnvWrapper
 from mpi4py import MPI
 
+print("Using tensorflow version: ",tf.__version__)
 
-PARTICLES = 4
+PARTICLES = 3
 TIMESTEPS = 8e7 #3e7
-DIRECTORY = 'results/ppo-multi-agent/%i-agents'%PARTICLES  #%datetime.now().strftime('%a-%d-%bT%H.%M')
-VAR_REDUCTION = 8 # Good for 4 core processor
-
+DIRECTORY = 'results/ppo-real/history-len-4'  #%datetime.now().strftime('%a-%d-%bT%H.%M')
+VAR_REDUCTION = 1 # Good for 4 core processor
 
 
 def policy_fn(name, ob_space, ac_space):
-    return MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=64, num_hid_layers=3)
+    print('---->',ob_space)
+    return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=64, rnn_hid_units=64, num_hid_layers=2)
 
 
 def train(env_id, num_timesteps, history_len, seed, render):
@@ -32,14 +34,14 @@ def train(env_id, num_timesteps, history_len, seed, render):
     set_global_seeds(workerseed)
 
     train_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-    #train_env = StackedEnvWrapper(train_env, state_history_len=history_len)
+    train_env = StackedEnvWrapper(train_env, state_history_len=history_len)
 
     eval_env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-    #eval_env = StackedEnvWrapper(eval_env, state_history_len=history_len)
-    #eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), "monitor.json"))
+    eval_env = StackedEnvWrapper(eval_env, state_history_len=history_len)
+    eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), "monitor.json"))
 
 
-    pposgd_multiagent.learn(train_env, eval_env, policy_fn,
+    pposgd_simple.learn(train_env, eval_env, policy_fn,
             directory=DIRECTORY.format(history_len),
             max_timesteps=num_timesteps,
             timesteps_per_batch=1024*VAR_REDUCTION,
@@ -58,9 +60,9 @@ def evaluate(env_id, history_len, render):
     """Evaluate the policy in the simulation"""
     U.make_session(num_cpu=4).__enter__()
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
-    #env = StackedEnvWrapper(env, state_history_len=history_len)
+    env = StackedEnvWrapper(env, state_history_len=history_len)
     directory = DIRECTORY.format(history_len)
-    pposgd_multiagent.run_evaluation(env, policy_fn, directory=directory, render=render)
+    pposgd_simple.run_evaluation(env, policy_fn, directory=directory, render=render)
     env.close()
 
 
@@ -70,9 +72,9 @@ def execute(env_id, history_len, render):
     from baselines.ppo1 import pposgd_simple
     U.make_session(num_cpu=4).__enter__()
     env = ExecuteEnvironment(num_particles=PARTICLES, disable_render=not render)
-    #env = StackedEnvWrapper(env, state_history_len=history_len)
+    env = StackedEnvWrapper(env, state_history_len=history_len)
     directory = DIRECTORY.format(history_len)
-    pposgd_multiagent.run_evaluation(env, policy_fn, directory=directory, render=render)
+    pposgd_simple.run_evaluation(env, policy_fn, directory=directory, render=render)
     env.close()
 
 

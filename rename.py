@@ -4,8 +4,8 @@ import tensorflow as tf
 
 """
 Tensorflow 1.4 to 1.1
-python rename.py --checkpoint_dir="results/ppo-resnet" --replace_from="kernel" --replace_to="weights"
-python rename.py --checkpoint_dir="results/ppo-resnet" --replace_from="bias" --replace_to="biases"
+python rename.py --checkpoint_dir="results/ppo-real/history-len-4" --replace_from="kernel" --replace_to="weights"
+python rename.py --checkpoint_dir="results/ppo-real/history-len-4" --replace_from="bias" --replace_to="biases"
 """
 
 usage_str = 'python tensorflow_rename_variables.py --checkpoint_dir=path/to/dir/ ' \
