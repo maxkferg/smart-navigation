@@ -26,6 +26,19 @@ See the original implimentation here: [https://github.com/songrotek/DDPG](https:
 
 To be implimented
 
+## Prerequisites
+
+Conda is used for package management. To install conda on ubuntu:
+```sh
+wget http://repo.continuum.io/archive/Anaconda3-4.4.0-Linux-x86_64.sh
+bash Anaconda3-4.3.0-Linux-x86_64.sh
+```
+
+Create a new environment with required dependencies:
+```sh
+conda env create -f environment.yml
+```
+
 ## Training
 
 All the code was written with Python3.6. The code should work with all recent versions of Python3.
