@@ -32,7 +32,6 @@ dependencies:
 - heapdict=1.0.0
 - imageio=2.3.0
 - intel-openmp=2018.0.0
-- jpeg=9b=he5867d9_2
 - kiwisolver=1.0.1
 - libcxx=4.0.1
 - libcxxabi=4.0.1
