@@ -15,6 +15,8 @@ class StackedEnvWrapper():
 		self.observation_space = ObservationSpace(-1, 1, shape=state_shape)
 		self.action_space = env.action_space
 		self.reward_range = env.reward_range
+		self.screen_height = env.screen_height
+		self.screen_width = env.screen_width
 		self.metadata = env.metadata
 		self.spec = env.spec
 

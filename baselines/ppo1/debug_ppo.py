@@ -8,12 +8,12 @@ from skimage.transform import resize
 
 
 
-def scale_image(image, n=800):
+def scale_image(image, h=800, w=800):
     """
     Scale image to 800 x 800
     """
     import cv2 as cv
-    return cv.resize(image, (n, n))
+    return cv.resize(image, (h, w))
 
 
 def map_to_colors(pixels):
@@ -70,7 +70,7 @@ def get_v_background(env, pi, stochastic):
     """
     v = get_v(env, pi, stochastic, n=100)
     v = map_to_colors(v)
-    v = scale_image(v)
+    v = scale_image(v, h=env.screen_height, w=env.screen_width)
     return v
 
 
