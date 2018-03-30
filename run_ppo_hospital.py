@@ -16,13 +16,11 @@ print("Using tensorflow version: ",tf.__version__)
 
 PARTICLES = 3
 TIMESTEPS = 8e7 #3e7
-DIRECTORY = 'results/ppo-real/history-len-4'  #%datetime.now().strftime('%a-%d-%bT%H.%M')
-DIRECTORY = 'models'  #%datetime.now().strftime('%a-%d-%bT%H.%M')
+DIRECTORY = 'models/hospital-model'
 VAR_REDUCTION = 1 # Good for 4 core processor
 
 
 def policy_fn(name, ob_space, ac_space):
-    print('---->',ob_space)
     return RnnPolicy(name=name, ob_space=ob_space, ac_space=ac_space, hid_size=64, rnn_hid_units=64, num_hid_layers=2)
 
 

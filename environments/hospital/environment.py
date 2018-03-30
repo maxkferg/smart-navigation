@@ -88,8 +88,8 @@ class Environment:
         self.reward_so_far = 0
         self.num_particles = num_particles
         self.state_size = num_particles*self.state_dimensions + self.action_dimensions
-        self.observation_space = ObservationSpace(-1, 1, shape=(self.state_size,))
-        self.action_space = ActionSpace(-1, 1, [self.action_dimensions])
+        self.observation_space = ObservationSpace(-1, 1, shape=(self.state_size,), dtype=np.float32)
+        self.action_space = ActionSpace(-1, 1, shape=[self.action_dimensions], dtype=np.float32)
         self.previous_action = np.zeros(self.action_space.shape)
 
         self.universe = Universe(scipy.ndimage.imread(self.spec.map_file))
@@ -406,19 +406,18 @@ class HumanLearningEnvironment(LearningEnvironment):
         action = None
 
         while action is None:
-            events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.QUIT:
-                    sys.exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_w:
-                        action = [0, 0.5]
-                    if event.key == pygame.K_d:
-                        action = [0.9, 0.5]
-                    if event.key == pygame.K_s:
-                        action = [0, -0.5]
-                    if event.key == pygame.K_a:
-                        action = [-0.9, 0.5]
+            event = pygame.event.wait()
+            if event.type == pygame.QUIT:
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_w:
+                    action = [0, 0.5]
+                if event.key == pygame.K_d:
+                    action = [0.9, 0.5]
+                if event.key == pygame.K_s:
+                    action = [0, -0.5]
+                if event.key == pygame.K_a:
+                    action = [-0.9, 0.5]
         return np.array(action)
 
 
@@ -429,6 +428,7 @@ if __name__=="__main__":
     while True:
         rewards = 0
         done = False
+        env.render()
         while not done:
             action = env.control_loop()
             observation, reward, done, info = env.step(action)
