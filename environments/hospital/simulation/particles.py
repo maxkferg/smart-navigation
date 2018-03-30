@@ -33,8 +33,8 @@ class Particle:
     collisions = 0
     control_signal = (0,0)
     previous_action = (0,0)
-    steering_sensitivity = STEERING_SENSITIVITY_MIN
-    acceleration_sensitivity = ACCELERATION_SENSITIVITY_MIN
+    steering_sensitivity = STEERING_SENSITIVITY_MAX
+    acceleration_sensitivity = ACCELERATION_SENSITIVITY_MAX
 
     def __init__(self, position, size, target=None, mass=1, elasticity=0.8, speed=0, backend='simulation', name="default", ghost=False):
         (x, y) = position
@@ -53,7 +53,6 @@ class Particle:
         self.noise = np.array([0,0])
         self.backend = backend
         self.name = name
-
 
 
     def clone(self):
@@ -81,8 +80,8 @@ class Particle:
     def reset(self):
         """Reset the partical dynamics"""
         self.collisions = 0
-        self.steering_sensitivity = np.random.uniform(STEERING_SENSITIVITY_MIN, STEERING_SENSITIVITY_MAX)
-        self.acceleration_sensitivity = np.random.uniform(ACCELERATION_SENSITIVITY_MIN, ACCELERATION_SENSITIVITY_MAX)
+        self.steering_sensitivity = STEERING_SENSITIVITY_MAX
+        self.acceleration_sensitivity = ACCELERATION_SENSITIVITY_MAX
 
 
     def move(self):

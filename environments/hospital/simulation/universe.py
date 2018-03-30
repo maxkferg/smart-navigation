@@ -107,11 +107,6 @@ class Universe:
 
     def resetTarget(self, target):
         """Reset the position of a target. Choose a reasonble target position"""
-        target.x = 240
-        target.y = 450
-        return
-
-
         otherTargets = set(self.targets)
         otherTargets.remove(target)
 

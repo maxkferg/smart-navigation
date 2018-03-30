@@ -24,7 +24,7 @@ import seaborn as sns; sns.set()
 class Spec:
     id = "collision-environment"
     map_file = "environments/hospital/maps/room.png"
-    particle_size = 60
+    particle_size = 56
     timestep_limit = 200
 
 
@@ -89,7 +89,7 @@ class Environment:
         self.num_particles = num_particles
         self.state_size = num_particles*self.state_dimensions + self.action_dimensions
         self.observation_space = ObservationSpace(-1, 1, shape=(self.state_size,))
-        self.action_space = ActionSpace(-1, 1, self.action_dimensions)
+        self.action_space = ActionSpace(-1, 1, [self.action_dimensions])
         self.previous_action = np.zeros(self.action_space.shape)
 
         self.universe = Universe(scipy.ndimage.imread(self.spec.map_file))
@@ -107,6 +107,9 @@ class Environment:
             target = self.universe.addTarget(radius=self.spec.particle_size, color=color)
             particle = self.universe.addParticle(radius=self.spec.particle_size, mass=100, speed=speed, elasticity=0.5, color=color, target=target, name=name)
 
+        # Fix all the particles in one spot
+        #self.fix_particles()
+
         # Reset the environment to correctly spawn the particles
         self.reset()
         if not disable_render:
@@ -122,6 +125,9 @@ class Environment:
         Step the environment forward
         Return (observation, reward, done, info)
         """
+        # Fix all the particles in one spot
+        #self.fix_particles()
+
         #for primary,action in zip(self.universe.particles, actions):
         primary = self.universe.particles[0]
         primary.name = "primary"
@@ -197,7 +203,7 @@ class Environment:
         Render the environment
         """
         # Clear the screen
-        if False:#background is not None:
+        if background is not None:
             pixelcopy.array_to_surface(self.screen, background)
         else:
             pixelcopy.array_to_surface(self.screen, self.universe.map)
@@ -232,6 +238,22 @@ class Environment:
 
         self.flip_screen()
         time.sleep(0.01)
+
+
+    def fix_particles(self):
+        """Fix all the particles in one place"""
+        self.universe.particles[0].x = 357
+        self.universe.particles[0].y = 117
+        self.universe.particles[0].angle = 3
+
+        self.universe.particles[2].x = 135
+        self.universe.particles[2].y = 276
+        self.universe.particles[2].angle = 1.5*math.pi/2
+
+        self.universe.particles[1].x = 565
+        self.universe.particles[1].y = 271
+        self.universe.particles[1].angle = 4
+
 
 
     def flip_screen(self):

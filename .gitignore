@@ -1,11 +1,11 @@
-
 *.pyc
 *.ckpt
 *.SUNet
 *.mp4
-*.jpg
-*.png
+*.pptx
+*.psd
 
 __pycache__
 
 results/*
+gym/
