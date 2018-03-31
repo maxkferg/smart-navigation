@@ -100,7 +100,7 @@ class Environment:
         self.num_particles = num_particles
         self.state_size = num_particles*self.state_dimensions + self.action_dimensions
         self.observation_space = ObservationSpace(-1, 1, shape=(self.state_size,))
-        self.action_space = ActionSpace(-1, 1, self.action_dimensions)
+        self.action_space = ActionSpace(-1, 1, shape=(self.action_dimensions,))
         self.previous_action = np.zeros(self.action_space.shape)
 
         self.primary = primary

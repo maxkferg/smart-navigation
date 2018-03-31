@@ -12,7 +12,7 @@ STEERING_SENSITIVITY_MIN = 0.4 # Radians I rotate at speed=1 and steering=1
 STEERING_SENSITIVITY_MAX = 0.8 # Radians I rotate at speed=1 and steering=1
 ACCELERATION_SENSITIVITY_MIN = 0.3 # The amount I speed up at full throttle
 ACCELERATION_SENSITIVITY_MAX = 0.8 # The amount I speed up at full throttle
-PIXELS_PER_SPEED = 20 # The pixels travelled at speed = 1
+PIXELS_PER_SPEED = 10 # The pixels travelled at speed = 1
 ADVERSARY_SPEED = 0.2
 
 

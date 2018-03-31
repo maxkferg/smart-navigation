@@ -12,12 +12,12 @@ from environments.real.environment import ExecuteEnvironment, LearningEnvironmen
 from environments.util.stacked_environment import StackedEnvWrapper
 from mpi4py import MPI
 
-print("Using tensorflow version: ",tf.__version__)
+print("Using tensorflow version: ", tf.__version__)
 
 PARTICLES = 2
 TIMESTEPS = 8e7 #3e7
-DIRECTORY = 'results/ppo-real/history-len-4'  #%datetime.now().strftime('%a-%d-%bT%H.%M')
-VAR_REDUCTION = 1 # Good for 4 core processor
+DIRECTORY = 'models/ppo-real-train/'
+VAR_REDUCTION = 1
 
 
 def policy_fn(name, ob_space, ac_space):
@@ -25,7 +25,7 @@ def policy_fn(name, ob_space, ac_space):
 
 
 def train(env_id, num_timesteps, history_len, seed, render):
-    U.make_session(num_cpu=1).__enter__()
+    U.single_threaded_session().__enter__()
 
     # We need to make sure the seed is different in each COMM world
     rank = MPI.COMM_WORLD.Get_rank()
@@ -57,7 +57,7 @@ def train(env_id, num_timesteps, history_len, seed, render):
 
 def evaluate(env_id, history_len, render):
     """Evaluate the policy in the simulation"""
-    U.make_session(num_cpu=4).__enter__()
+    U.single_threaded_session().__enter__()
     env = LearningEnvironment(num_particles=PARTICLES, disable_render=not render)
     env = StackedEnvWrapper(env, state_history_len=history_len)
     directory = DIRECTORY.format(history_len)
@@ -69,7 +69,7 @@ def execute(env_id, history_len, render):
     """Execute the policy on the real hardware"""
     from baselines.ppo1.rnn_policy import RnnPolicy
     from baselines.ppo1 import pposgd_simple
-    U.make_session(num_cpu=4).__enter__()
+    U.single_threaded_session().__enter__()
     env = ExecuteEnvironment(num_particles=PARTICLES, disable_render=not render)
     env = StackedEnvWrapper(env, state_history_len=history_len)
     directory = DIRECTORY.format(history_len)

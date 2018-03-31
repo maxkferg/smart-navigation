@@ -230,11 +230,11 @@ class Environment:
 
         # Draw the control vector
         try:
-            p = self.primary
+            p = self.universe.particles[0]
             dx, dy = p.get_control_vector(scale=30)
             pygame.gfxdraw.line(self.screen, int(p.x), int(p.y), int(p.x+dx), int(p.y+dy), (255,0,0))
-        except AttributeError:
-            pass
+        except AttributeError as e:
+            print(e)
 
         self.flip_screen()
         time.sleep(0.01)
