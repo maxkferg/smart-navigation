@@ -131,6 +131,20 @@ class Universe:
             target.y = random.uniform(ymin+target.radius, ymax-target.radius)
 
 
+    def resetTarget(self, target):
+        """Reset the position of a target. Choose a reasonble target position"""
+        spawn_options = np.nonzero(self.spawn)
+        spawn_indicies = list(range(len(spawn_options[0])))
+        random.shuffle(spawn_indicies)
+
+        index = spawn_indicies.pop()
+        xi = spawn_options[1][index] # Column
+        yi = spawn_options[0][index] # Row
+        xmin, xmax, ymin, ymax = self._get_grid_cell_bounds(xi, yi)
+        target.x = random.uniform(xmin+target.radius, xmax-target.radius)
+        target.y = random.uniform(ymin+target.radius, ymax-target.radius)
+
+
     def update(self):
         """
         Moves particles and tests for collisions with the walls and each other

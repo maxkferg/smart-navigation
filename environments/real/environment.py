@@ -164,8 +164,9 @@ class Environment:
         self.current_step += 1
 
         if self.primary.atTarget(threshold=50) and self.primary.speed<0.4:
+            self.universe.resetTarget(self.primary.target)
             reward = 1
-            done = True
+            done = False
         elif self.primary.collisions > 0:
             reward = -1
             done = True

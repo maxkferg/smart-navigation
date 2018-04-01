@@ -8,9 +8,9 @@ from .utils import addVectors, pol2cart
 from .utils import normalizeAngle
 
 MAX_SPEED = 1.5 # Maximum simulation speed
-STEERING_SENSITIVITY_MIN = 0.2 # Radians I rotate at speed=1 and steering=1
-STEERING_SENSITIVITY_MAX = 0.5 # Radians I rotate at speed=1 and steering=1
-ACCELERATION_SENSITIVITY_MIN = 0.3 # The amount I speed up at full throttle
+STEERING_SENSITIVITY_MIN = 0.4 # Radians I rotate at speed=1 and steering=1
+STEERING_SENSITIVITY_MAX = 0.8 # Radians I rotate at speed=1 and steering=1
+ACCELERATION_SENSITIVITY_MIN = 0.4 # The amount I speed up at full throttle
 ACCELERATION_SENSITIVITY_MAX = 0.8 # The amount I speed up at full throttle
 PIXELS_PER_SPEED = 40 # The pixels travelled at speed = 1
 ADVERSARY_SPEED = 0.2
@@ -95,12 +95,12 @@ class Particle:
 
 
     def move_adversary(self):
-        """Move randomly in a correlated manner"""
+        """Move randomly in a correlated manner. Be more predictable than the primary"""
         if self.name not in ["primary","ghost"]:
-            self.speed = self.acceleration_sensitivity + 0.1 * random.random()
-            self.angle += self.steering_sensitivity * random.uniform(-1,1)
-            self.speed = np.clip(self.speed, 0, MAX_SPEED)
-            self.angle = np.clip(self.angle, 0, 2*math.pi)
+            steering = 0.2 * random.uniform(-1,1)
+            throttle = 0.2 * random.uniform(0,1)
+            self.control(steering, throttle)
+            self.speed = np.clip(self.speed, 0, 0.5*MAX_SPEED)
 
 
     def atTarget(self, threshold=10):

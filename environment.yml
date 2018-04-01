@@ -4,6 +4,7 @@ channels:
 - kne
 - anaconda
 - conda-forge
+- mpi4py
 - menpo
 - defaults
 dependencies:
@@ -49,7 +50,7 @@ dependencies:
 - pytz=2018.3
 - pywavelets=0.5.2
 - pyyaml=3.12
-- mpi4py=2.0.0
+- mpi4py=2.0.0=py35_openmpi_2 # Important to use openmpi
 - readline=7.0
 - scikit-image=0.13.1
 - scikit-learn=0.19.1
@@ -66,6 +67,7 @@ dependencies:
   - chardet==3.0.4
   - future==0.16.0
   - gql==0.1.0
+  - gym==0.10.4
   - graphene==1.4
   - graphql-core==1.1
   - graphql-relay==0.4.5
@@ -75,8 +77,6 @@ dependencies:
   - mkl-fft==1.0.0
   - mkl-random==1.0.1
   - numba==0.34.0
-  - redis
-  - requests==2.18.4
-  - urllib3==1.22
+  - redis==2.0.0
 prefix: /Users/maxferguson/miniconda3/envs/master
 

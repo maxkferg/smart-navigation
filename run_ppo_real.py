@@ -17,7 +17,7 @@ print("Using tensorflow version: ", tf.__version__)
 PARTICLES = 2
 TIMESTEPS = 8e7 #3e7
 DIRECTORY = 'models/ppo-real-train/'
-VAR_REDUCTION = 1
+VAR_REDUCTION = 2
 
 
 def policy_fn(name, ob_space, ac_space):
@@ -45,7 +45,7 @@ def train(env_id, num_timesteps, history_len, seed, render):
             max_timesteps=num_timesteps,
             timesteps_per_batch=1024*VAR_REDUCTION,
             clip_param=0.2,
-            entcoeff=0.001,
+            entcoeff=0.0001,
             optim_epochs=10,
             optim_stepsize=2e-4,
             optim_batchsize=64,
