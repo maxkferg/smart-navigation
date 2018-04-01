@@ -97,7 +97,6 @@ class Particle:
             throttle = 0.2 * random.uniform(0,1)
             self.control(steering, throttle)
             self.speed = np.clip(self.speed, 0, 0.5*MAX_SPEED)
-            self.angle = np.clip(self.angle, 0, 2*math.pi)
 
 
     def update(self):

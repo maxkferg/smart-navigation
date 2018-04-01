@@ -21,10 +21,11 @@ def map_to_colors(pixels):
     Map image from intensity to colors
     """
     import cv2 as cv
-    pixels = -pixels # Prefe colormap reversed
-    minq = np.min(pixels)
-    maxq = np.max(pixels)
+    pixels = -pixels # Prefer colormap reversed
+    minq = -4#np.min(pixels)
+    maxq = 1#np.max(pixels)
     pixels = 255 / (maxq-minq) * (pixels - minq)
+    pixels = np.clip(pixels, 0, 255)
 
     pixels = pixels.astype(np.float32)
     image = cv.cvtColor(pixels, cv.COLOR_GRAY2BGR)
@@ -68,7 +69,7 @@ def get_v_background(env, pi, stochastic):
     """
     Return a q background image
     """
-    v = get_v(env, pi, stochastic, n=100)
+    v = get_v(env, pi, stochastic, n=80)
     v = map_to_colors(v)
     v = scale_image(v, h=env.screen_height, w=env.screen_width)
     return v

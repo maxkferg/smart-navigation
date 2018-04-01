@@ -39,7 +39,6 @@ def train(env_id, num_timesteps, history_len, seed, render):
     eval_env = StackedEnvWrapper(eval_env, state_history_len=history_len)
     eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), "monitor.json"))
 
-
     pposgd_simple.learn(train_env, eval_env, policy_fn,
             directory=DIRECTORY.format(history_len),
             max_timesteps=num_timesteps,
