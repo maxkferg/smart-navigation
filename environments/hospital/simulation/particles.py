@@ -91,11 +91,12 @@ class Particle:
 
 
     def move_adversary(self):
-        """Move randomly in a correlated manner"""
+        """Move randomly in a correlated manner. Be more predictable than the primary"""
         if self.name not in ["primary","ghost"]:
-            self.speed = self.acceleration_sensitivity + 0.1 * random.random()
-            self.angle += self.steering_sensitivity * random.uniform(-1,1)
-            self.speed = np.clip(self.speed, 0, MAX_SPEED)
+            steering = 0.2 * random.uniform(-1,1)
+            throttle = 0.2 * random.uniform(0,1)
+            self.control(steering, throttle)
+            self.speed = np.clip(self.speed, 0, 0.5*MAX_SPEED)
             self.angle = np.clip(self.angle, 0, 2*math.pi)
 
 

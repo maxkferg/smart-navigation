@@ -30,33 +30,35 @@ To be implimented
 
 Conda is used for package management. To install conda on ubuntu:
 ```sh
-wget http://repo.continuum.io/archive/Anaconda3-4.4.0-Linux-x86_64.sh
-bash Anaconda3-4.3.0-Linux-x86_64.sh
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source /home/ubuntu/.bashrc
+source ubuntu.sh # Install ubuntu deps
 ```
 
 Create a new environment with required dependencies:
 ```sh
+git clone https://github.com/maxkferg/smart-navigation && cd smart-navigation
 conda env create -f environment.yml
 ```
 
 ## Training
 
-All the code was written with Python3.6. The code should work with all recent versions of Python3.
-
-Install the requirements
-```sh
-pip3 install -r requirements.txt
-```
-
+All the code was written with Python 3.6. The code should work with all recent versions of Python3.
 Test the environment manually
 ```sh
-python3 -m environments.redis.environment
+python -m environments.hospital.environment
 ```
 
-Run the training process. Change epsilon to a high value before training 
+Run the training process. Change epsilon to a high value before training
 the first time.
 ```sh
-python3 train.py
+python run_ppo_hospital.py --train=True
+```
+
+Run using MPI
+```sh
+mpirun -n 70 python run_ppo_hospital.py --train=True
 ```
 
 ## License
