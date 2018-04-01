@@ -22,8 +22,8 @@ def map_to_colors(pixels):
     """
     import cv2 as cv
     pixels = -pixels # Prefer colormap reversed
-    minq = -4#np.min(pixels)
-    maxq = 1#np.max(pixels)
+    minq = -2 #np.min(pixels)
+    maxq = 1 #np.max(pixels)
     pixels = 255 / (maxq-minq) * (pixels - minq)
     pixels = np.clip(pixels, 0, 255)
 

@@ -15,9 +15,9 @@ from mpi4py import MPI
 print("Using tensorflow version: ",tf.__version__)
 
 PARTICLES = 3
-TIMESTEPS = 3e7 #3e7
+TIMESTEPS = 10e7 #3e7
 DIRECTORY = 'models/hospital-model'
-VAR_REDUCTION = 2 # Good for 4 core processor
+VAR_REDUCTION = 4 # Good for 4 core processor
 
 
 def policy_fn(name, ob_space, ac_space):
@@ -48,7 +48,7 @@ def train(env_id, num_timesteps, history_len, seed, render):
             optim_epochs=10,
             optim_stepsize=2e-4,
             optim_batchsize=64,
-            gamma=0.995, lam=0.95, schedule='linear',
+            gamma=0.99, lam=0.95, schedule='linear',
             render=render
         )
     train_env.close()

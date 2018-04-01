@@ -30,9 +30,9 @@ To be implimented
 
 Conda is used for package management. To install conda on ubuntu:
 ```sh
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-bash Miniconda3-latest-Linux-x86_64.sh \
-source /home/ubuntu/.bashrc \
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source /home/ubuntu/.bashrc
 source ubuntu.sh # Install ubuntu deps
 ```
 
@@ -58,7 +58,7 @@ python run_ppo_hospital.py --train=True
 
 Run using MPI
 ```sh
-mpirun -n 70 python run_ppo_hospital.py --train=True
+mpirun -n 30 python run_ppo_hospital.py --train=True
 ```
 
 ## License
