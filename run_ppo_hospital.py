@@ -52,7 +52,8 @@ def train(env_id, num_timesteps, history_len, seed, render):
             gamma=0.995, lam=0.95, schedule='linear',
             render=render
         )
-    env.close()
+    train_env.close()
+    eval_env.close()
 
 
 def evaluate(env_id, history_len, render):

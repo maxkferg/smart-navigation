@@ -176,8 +176,8 @@ def learn(train_env, eval_env, policy_func, *,
     timesteps_so_far = 0
     iters_so_far = 0
     tstart = time.time()
-    lenbuffer = deque(maxlen=100) # rolling buffer for episode lengths
-    rewbuffer = deque(maxlen=100) # rolling buffer for episode rewards
+    lenbuffer = deque(maxlen=1000) # rolling buffer for episode lengths
+    rewbuffer = deque(maxlen=1000) # rolling buffer for episode rewards
 
     assert sum([max_iters>0, max_timesteps>0, max_episodes>0, max_seconds>0])==1, "Only one time constraint permitted"
 
@@ -254,6 +254,7 @@ def learn(train_env, eval_env, policy_func, *,
         logger.record_tabular("TimestepsSoFar", timesteps_so_far)
         logger.record_tabular("TimeElapsed", time.time() - tstart)
         logger.record_tabular("Learning Rate", cur_lrmult)
+        #print(rewbuffer)
 
         if MPI.COMM_WORLD.Get_rank()==0:
             logger.dump_tabular()

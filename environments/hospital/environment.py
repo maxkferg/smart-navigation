@@ -25,7 +25,7 @@ class Spec:
     id = "collision-environment"
     map_file = "environments/hospital/maps/room.png"
     particle_size = 56
-    timestep_limit = 200
+    timestep_limit = 2000
 
 
 def clip(val, minimum, maximum):
@@ -40,6 +40,8 @@ def clipv(vector, space):
 
 def get_color(i):
     """Return a color from the pallete"""
+    if i >= 1:
+        i = 2
     colors = sns.color_palette("muted")
     return tuple(255*c for c in colors[i])
 
@@ -68,7 +70,7 @@ class Environment:
     reward_range = [-2,1]
     action_dimensions = 2
     state_dimensions = 6 # The number of dimensions per particle (x,y,theta,v,tx,ty)
-    max_steps = 100
+    max_steps = 2000
     current_actor = 0
 
     spec = Spec()
@@ -157,7 +159,7 @@ class Environment:
         if primary.atTarget(threshold=40) and primary.speed<0.5:
             self.universe.resetTarget(primary.target)
             reward = 1
-            done = True
+            done = False
         elif primary.collisions > 0:
             reward = -1
             done = True
@@ -215,8 +217,10 @@ class Environment:
 
         # Draw primary target
         for t in self.universe.targets[:1]:
-            self.draw_circle(int(t.x), int(t.y), t.radius, t.color, filled=False)
-            self.draw_circle(int(t.x), int(t.y), int(t.radius/4), t.color, filled=True)
+            color = t.color
+            color = (255,255,255)
+            self.draw_circle(int(t.x), int(t.y), t.radius, color, filled=False)
+            self.draw_circle(int(t.x), int(t.y), int(t.radius/4), color, filled=True)
 
         # Draw the primary particle orientation
         for p in self.universe.particles:
